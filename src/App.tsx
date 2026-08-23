@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import LandingPage from './LandingPage';
 import ServicesPage from './ServicesPage';
+import LoginPage from './LoginPage';
 import ParticleText from './ParticleText';
 
 const App: React.FC = () => {
@@ -40,6 +41,7 @@ const App: React.FC = () => {
   }, []);
 
   const isServices = currentPath.toLowerCase().includes('services');
+  const isLogin = currentPath.toLowerCase().includes('login');
 
   return (
     <>
@@ -84,7 +86,7 @@ const App: React.FC = () => {
         </div>
       )}
       
-      {isServices ? <ServicesPage /> : <LandingPage />}
+      {isLogin ? <LoginPage /> : isServices ? <ServicesPage /> : <LandingPage />}
     </>
   );
 };
