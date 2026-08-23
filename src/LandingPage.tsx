@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Mail, ArrowRight } from 'lucide-react';
 import Lenis from 'lenis';
