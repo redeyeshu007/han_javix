@@ -1,0 +1,900 @@
+/* ══════════════════════════════════════════════════════════════════════════════
+   HANDOVERLY AI — SERVICES PAGE STYLES
+   Editorial "The Handover Journey" Design System
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.services-page {
+  background-color: #F8FAFC;
+  color: #0B1F33;
+  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
+  overflow-x: hidden;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   SECTION 01 — HERO
+   ───────────────────────────────────────────────────────────── */
+.services-hero {
+  padding-top: 170px;
+  padding-bottom: 90px;
+  min-height: 680px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background-color: #F8FAFC;
+  position: relative;
+}
+
+.services-hero__content {
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.services-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #2563EB;
+  margin-bottom: 24px;
+}
+
+.services-hero__title {
+  font-family: 'DM Serif Display', 'Cormorant Garamond', serif;
+  font-size: clamp(42px, 5.5vw, 82px);
+  font-weight: 400;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  color: #0B1F33;
+  margin: 0 0 24px 0;
+}
+
+.services-hero__subtitle {
+  font-size: clamp(16px, 1.8vw, 20px);
+  line-height: 1.65;
+  color: #64748B;
+  max-width: 620px;
+  margin: 0 0 36px 0;
+  font-weight: 400;
+}
+
+.services-hero__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #2563EB;
+  background: #FFFFFF;
+  border: 1px solid #DCE6F2;
+  border-radius: 999px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 8px rgba(11, 31, 51, 0.04);
+  margin-bottom: 64px;
+}
+
+.services-hero__cta:hover {
+  border-color: #2563EB;
+  color: #1D4ED8;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.12);
+}
+
+/* Horizontal Journey Visual in Hero */
+.services-hero__track {
+  width: 100%;
+  max-width: 780px;
+  position: relative;
+  margin-top: 16px;
+  padding: 0 20px;
+}
+
+.services-hero__track-line {
+  position: absolute;
+  top: 50%;
+  left: 30px;
+  right: 30px;
+  height: 1px;
+  background-color: #DCE6F2;
+  transform: translateY(-50%);
+  z-index: 1;
+}
+
+.services-hero__track-dot {
+  position: absolute;
+  top: 50%;
+  left: 30px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #2563EB;
+  box-shadow: 0 0 10px rgba(37, 99, 235, 0.6);
+  transform: translate(-50%, -50%);
+  z-index: 3;
+  animation: heroDotPulse 6s ease-in-out infinite;
+}
+
+@keyframes heroDotPulse {
+  0% {
+    left: 40px;
+    opacity: 0.2;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    left: calc(100% - 40px);
+    opacity: 0.2;
+  }
+}
+
+.services-hero__stages {
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  z-index: 2;
+}
+
+.services-hero__stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  background-color: #F8FAFC;
+  padding: 0 12px;
+}
+
+.services-hero__stage-node {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: #FFFFFF;
+  border: 2px solid #2563EB;
+  transition: all 0.3s ease;
+}
+
+.services-hero__stage-name {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #0B1F33;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   SECTION 02 — THE JOURNEY (Vertical Timeline)
+   ───────────────────────────────────────────────────────────── */
+.services-journey {
+  padding: 80px 0 120px;
+  position: relative;
+  background-color: #F8FAFC;
+}
+
+.services-journey__container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+  position: relative;
+}
+
+/* Central vertical line */
+.services-journey__spine {
+  position: absolute;
+  top: 40px;
+  bottom: 40px;
+  left: 50%;
+  width: 1px;
+  background-color: #DCE6F2;
+  transform: translateX(-50%);
+  z-index: 1;
+}
+
+/* Timeline Item Container */
+.journey-step {
+  display: grid;
+  grid-template-columns: 1fr 80px 1fr;
+  align-items: center;
+  min-height: 540px;
+  padding: 40px 0;
+  position: relative;
+  z-index: 2;
+}
+
+/* Node in center column */
+.journey-step__spine-node {
+  grid-column: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.journey-step__node-circle {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: #FFFFFF;
+  border: 3px solid #2563EB;
+  box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.08);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.journey-step:hover .journey-step__node-circle {
+  transform: scale(1.25);
+  box-shadow: 0 0 0 10px rgba(37, 99, 235, 0.16);
+  background-color: #2563EB;
+}
+
+/* Alternating content sides */
+.journey-step__content {
+  display: flex;
+  flex-direction: column;
+}
+
+.journey-step--left .journey-step__content {
+  grid-column: 1;
+  text-align: right;
+  padding-right: 48px;
+  align-items: flex-end;
+}
+
+.journey-step--left .journey-step__visual {
+  grid-column: 3;
+  padding-left: 48px;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.journey-step--right .journey-step__content {
+  grid-column: 3;
+  text-align: left;
+  padding-left: 48px;
+  align-items: flex-start;
+}
+
+.journey-step--right .journey-step__visual {
+  grid-column: 1;
+  padding-right: 48px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Typography elements in Step */
+.journey-step__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.journey-step__number {
+  font-family: 'DM Serif Display', 'Cormorant Garamond', serif;
+  font-size: 20px;
+  color: #2563EB;
+  font-weight: 400;
+}
+
+.journey-step__label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #0B1F33;
+}
+
+.journey-step__title {
+  font-family: 'DM Serif Display', 'Cormorant Garamond', serif;
+  font-size: clamp(34px, 3.2vw, 54px);
+  font-weight: 400;
+  line-height: 1.15;
+  color: #0B1F33;
+  margin: 0 0 20px 0;
+  letter-spacing: -0.01em;
+}
+
+.journey-step__desc {
+  font-size: 17px;
+  line-height: 1.7;
+  color: #64748B;
+  margin: 0 0 24px 0;
+  max-width: 480px;
+}
+
+/* Mini checklist / lists */
+.journey-step__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.journey-step__list-item {
+  font-size: 14px;
+  font-weight: 500;
+  color: #475569;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.journey-step--left .journey-step__list-item {
+  flex-direction: row-reverse;
+}
+
+.journey-step__list-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: #2563EB;
+  flex-shrink: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   JOURNEY VISUAL COMPOSITIONS (Typographic & Minimal)
+   ───────────────────────────────────────────────────────────── */
+.journey-visual-box {
+  background-color: #FFFFFF;
+  border: 1px solid #DCE6F2;
+  border-radius: 16px;
+  padding: 40px 36px;
+  width: 100%;
+  max-width: 460px;
+  box-shadow: 0 4px 20px rgba(11, 31, 51, 0.03);
+  transition: all 0.3s ease;
+}
+
+.journey-visual-box:hover {
+  border-color: #BFDBFE;
+  box-shadow: 0 12px 32px rgba(37, 99, 235, 0.07);
+  transform: translateY(-2px);
+}
+
+/* Visual 01: BUILD horizontal node line */
+.visual-build {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  padding: 20px 0;
+}
+
+.visual-build__track {
+  position: absolute;
+  top: 50%;
+  left: 20px;
+  right: 20px;
+  height: 1px;
+  background-color: #DCE6F2;
+  transform: translateY(-50%);
+  z-index: 1;
+}
+
+.visual-build__node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  z-index: 2;
+  background-color: #FFFFFF;
+  padding: 0 6px;
+}
+
+.visual-build__point {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #2563EB;
+}
+
+.visual-build__label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #0B1F33;
+}
+
+/* Visual 02: INSPECT vertical sequence */
+.visual-inspect {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.visual-inspect__step {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #0B1F33;
+  padding: 6px 14px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.visual-inspect__step--active {
+  background-color: #EAF2FF;
+  color: #2563EB;
+  border: 1px solid #BFDBFE;
+}
+
+.visual-inspect__arrow {
+  color: #94A3B8;
+  font-size: 14px;
+  line-height: 1;
+}
+
+/* Visual 03: HANDOVER Readiness Checklist */
+.visual-handover {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.visual-handover__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #F1F5F9;
+}
+
+.visual-handover__key {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #475569;
+}
+
+.visual-handover__check {
+  color: #2563EB;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.visual-handover__badge {
+  margin-top: 12px;
+  border: 1px solid #2563EB;
+  padding: 12px 20px;
+  text-align: center;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #2563EB;
+  background-color: #F8FAFC;
+}
+
+/* Visual 04: CARE horizontal chain */
+.visual-care {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.visual-care__chain {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.visual-care__item {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #0B1F33;
+}
+
+.visual-care__arrow {
+  color: #2563EB;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Visual 05: ASSOCIATION transfer composition */
+.visual-association {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  text-align: center;
+}
+
+.visual-association__transfer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 16px;
+}
+
+.visual-association__entity {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #0B1F33;
+}
+
+.visual-association__line-wrap {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.visual-association__line {
+  width: 100%;
+  height: 1px;
+  background-color: #2563EB;
+}
+
+.visual-association__arrow {
+  color: #2563EB;
+  font-size: 16px;
+  margin-left: -4px;
+  line-height: 1;
+}
+
+.visual-association__meta {
+  font-size: 12px;
+  color: #64748B;
+  letter-spacing: 0.02em;
+  font-weight: 500;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   SECTION 06 — AI ASSISTANCE (Dark technical calmness)
+   ───────────────────────────────────────────────────────────── */
+.services-ai {
+  background-color: #050505;
+  color: #FFFFFF;
+  padding: 140px 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.services-ai__container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.services-ai__eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #3B82F6;
+  margin-bottom: 24px;
+}
+
+.services-ai__title {
+  font-family: 'DM Serif Display', 'Cormorant Garamond', serif;
+  font-size: clamp(38px, 4.5vw, 68px);
+  font-weight: 400;
+  line-height: 1.12;
+  color: #FFFFFF;
+  margin: 0 0 24px 0;
+  letter-spacing: -0.01em;
+}
+
+.services-ai__desc {
+  font-size: clamp(16px, 1.8vw, 20px);
+  line-height: 1.65;
+  color: #94A3B8;
+  max-width: 720px;
+  margin: 0 0 64px 0;
+}
+
+/* 4-step typographic workflow */
+.services-ai__flow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  width: 100%;
+  max-width: 840px;
+  margin-bottom: 56px;
+}
+
+.services-ai__step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.services-ai__step-name {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #FFFFFF;
+}
+
+.services-ai__step-line {
+  width: 100%;
+  height: 1px;
+  background-color: rgba(59, 130, 246, 0.4);
+}
+
+.services-ai__flow-arrow {
+  color: #3B82F6;
+  font-size: 18px;
+  opacity: 0.8;
+}
+
+.services-ai__statement {
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748B;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 8px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   SECTION 07 — CLOSING STATEMENT
+   ───────────────────────────────────────────────────────────── */
+.services-closing {
+  padding: 120px 0 90px;
+  background-color: #FFFFFF;
+  text-align: center;
+  border-top: 1px solid #DCE6F2;
+}
+
+.services-closing__container {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.services-closing__label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #2563EB;
+  margin-bottom: 20px;
+}
+
+.services-closing__title {
+  font-family: 'DM Serif Display', 'Cormorant Garamond', serif;
+  font-size: clamp(38px, 4.5vw, 64px);
+  font-weight: 400;
+  line-height: 1.1;
+  color: #0B1F33;
+  margin: 0 0 20px 0;
+}
+
+.services-closing__subtitle {
+  font-size: 18px;
+  color: #64748B;
+  margin: 0 0 54px 0;
+}
+
+.services-closing__sequence {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 16px 28px;
+  background-color: #F8FAFC;
+  border: 1px solid #DCE6F2;
+  border-radius: 999px;
+}
+
+.services-closing__seq-item {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #0B1F33;
+}
+
+.services-closing__seq-arrow {
+  color: #2563EB;
+  font-size: 14px;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   SECTION 08 — CTA (Compact & Elegant)
+   ───────────────────────────────────────────────────────────── */
+.services-cta {
+  padding: 90px 0 110px;
+  background-color: #F8FAFC;
+  text-align: center;
+  border-top: 1px solid #DCE6F2;
+}
+
+.services-cta__container {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.services-cta__title {
+  font-family: 'DM Serif Display', 'Cormorant Garamond', serif;
+  font-size: clamp(32px, 3.8vw, 48px);
+  font-weight: 400;
+  color: #0B1F33;
+  margin: 0 0 16px 0;
+}
+
+.services-cta__subtitle {
+  font-size: 17px;
+  color: #64748B;
+  margin: 0 0 36px 0;
+  line-height: 1.6;
+}
+
+.services-cta__button {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 36px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #FFFFFF;
+  background-color: #2563EB;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.25);
+}
+
+.services-cta__button:hover {
+  background-color: #1D4ED8;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.35);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   RESPONSIVE LAYOUTS (Desktop, Tablet, Mobile)
+   ───────────────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .services-hero {
+    padding-top: 150px;
+    padding-bottom: 70px;
+  }
+
+  .journey-step {
+    min-height: 480px;
+  }
+  
+  .journey-step--left .journey-step__content,
+  .journey-step--right .journey-step__content {
+    padding-right: 28px;
+    padding-left: 28px;
+  }
+
+  .journey-step--left .journey-step__visual,
+  .journey-step--right .journey-step__visual {
+    padding-right: 28px;
+    padding-left: 28px;
+  }
+}
+
+@media (max-width: 768px) {
+  .services-hero {
+    padding-top: 130px;
+    min-height: auto;
+  }
+
+  .services-hero__track {
+    display: none; /* Keep clean on small mobile */
+  }
+
+  /* Single left-rail vertical timeline on mobile */
+  .services-journey__spine {
+    left: 20px;
+    transform: none;
+  }
+
+  .journey-step {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding-left: 48px;
+    padding-right: 0;
+    min-height: auto;
+    margin-bottom: 64px;
+    text-align: left !important;
+  }
+
+  .journey-step__spine-node {
+    position: absolute;
+    left: 12px;
+    top: 4px;
+  }
+
+  .journey-step--left .journey-step__content,
+  .journey-step--right .journey-step__content {
+    text-align: left;
+    padding: 0;
+    align-items: flex-start;
+    width: 100%;
+  }
+
+  .journey-step--left .journey-step__list-item {
+    flex-direction: row;
+  }
+
+  .journey-step--left .journey-step__visual,
+  .journey-step--right .journey-step__visual {
+    padding: 0;
+    margin-top: 24px;
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .journey-visual-box {
+    max-width: 100%;
+    padding: 24px 20px;
+  }
+
+  /* AI section responsive */
+  .services-ai {
+    padding: 90px 0;
+  }
+
+  .services-ai__flow {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .services-ai__flow-arrow {
+    transform: rotate(90deg);
+  }
+
+  .services-closing__sequence {
+    border-radius: 16px;
+    flex-direction: column;
+    gap: 8px;
+    padding: 20px;
+  }
+
+  .services-closing__seq-arrow {
+    transform: rotate(90deg);
+  }
+}
