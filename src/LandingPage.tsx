@@ -129,7 +129,7 @@ export const Navbar: React.FC = () => {
           </ul>
 
           <div className="navbar__actions">
-            <button className="navbar__signin">Log in</button>
+            <a href="#login" className="navbar__signin">Log in</a>
           </div>
 
           <button
