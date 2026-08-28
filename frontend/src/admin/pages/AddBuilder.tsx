@@ -312,9 +312,10 @@ const AddBuilder: React.FC = () => {
                           placeholder="e.g. SecretPassword123!" 
                           style={{ paddingRight: '40px' }}
                         />
-                        <button 
+                        <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
+                          aria-label={showPassword ? 'Hide password' : 'Show password'}
                           style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--admin-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                         >
                           {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -334,9 +335,10 @@ const AddBuilder: React.FC = () => {
                           placeholder="e.g. SecretPassword123!" 
                           style={{ paddingRight: '40px' }}
                         />
-                        <button 
+                        <button
                           type="button"
                           onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
                           style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--admin-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                         >
                           {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}

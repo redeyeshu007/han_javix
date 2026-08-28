@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 
 import { CheckSquare, AlertTriangle, Play, Check } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { contractorsApi, defectsApi, unitsApi } from '../../api/services';
-import { PageLoading } from '../../components/LoadingState';
+import { contractorsApi, defectsApi, unitsApi, documentService } from '../../api/services';
+import { PageLoading, ButtonLoading } from '../../components/LoadingState';
 
 const ContractorTasks: React.FC = () => {
   const { user } = useAuth();
@@ -11,10 +11,13 @@ const ContractorTasks: React.FC = () => {
   const [defects, setDefects] = useState<any[]>([]);
   const [units, setUnits] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   // Resolution form controls
   const [resolvingId, setResolvingId] = useState<string | null>(null);
   const [resNote, setResNote] = useState('');
+  const [resFileName, setResFileName] = useState('');
+  const [resFileData, setResFileData] = useState<string | null>(null);
+  const [isSubmittingResolution, setIsSubmittingResolution] = useState(false);
 
   const loadTasks = async () => {
     try {
@@ -55,17 +58,50 @@ const ContractorTasks: React.FC = () => {
     }
   };
 
+  const handleEvidenceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setResFileName(file.name);
+    const reader = new FileReader();
+    reader.onloadend = () => setResFileData(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
   const handleResolveDefect = async (e: React.FormEvent, id: string) => {
     e.preventDefault();
     if (!resNote.trim()) return;
 
+    setIsSubmittingResolution(true);
     try {
+      const defect = defects.find(d => d.id === id);
+      if (resFileData && defect) {
+        await documentService.uploadDocument({
+          builderId: defect.builderId,
+          projectId: defect.projectId,
+          unitId: defect.unitId,
+          defectId: defect.id,
+          category: 'Defect Evidence',
+          documentType: 'Image',
+          name: `Resolution evidence for ${defect.title}`,
+          fileName: resFileName,
+          fileType: 'image/*',
+          fileSize: '',
+          uploadedBy: contractor?.companyName || 'Contractor',
+          uploadedAt: new Date().toISOString().split('T')[0],
+          status: 'Verified',
+          fileData: resFileData
+        });
+      }
       await defectsApi.updateDefect(id, 'Resolved', `Contractor completed repairs. Notes: ${resNote}`, resNote);
       setResNote('');
+      setResFileName('');
+      setResFileData(null);
       setResolvingId(null);
       loadTasks();
     } catch (err) {
       console.error('Error resolving defect:', err);
+    } finally {
+      setIsSubmittingResolution(false);
     }
   };
 
@@ -144,16 +180,23 @@ const ContractorTasks: React.FC = () => {
 
                   {isResolving ? (
                     <form onSubmit={(e) => handleResolveDefect(e, d.id)} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <textarea 
+                      <textarea
                         required
                         value={resNote}
                         onChange={e => setResNote(e.target.value)}
                         placeholder="Explain resolution (e.g. replaced tile)"
                         style={{ width: '100%', padding: '6px', fontSize: '12px', borderRadius: '4px', border: '1px solid var(--admin-border)', minHeight: '60px' }}
                       />
+                      <div>
+                        <label style={{ fontSize: '11px', fontWeight: 600, color: 'var(--admin-navy)', display: 'block', marginBottom: '4px' }}>Evidence Photo (Optional)</label>
+                        <input type="file" accept="image/*" onChange={handleEvidenceChange} style={{ fontSize: '11px', width: '100%' }} />
+                        {resFileName && <div style={{ fontSize: '11px', color: 'var(--admin-text-secondary)', marginTop: '4px' }}>Attached: {resFileName}</div>}
+                      </div>
                       <div style={{ display: 'flex', gap: '8px' }}>
-                        <button type="button" className="btn-secondary" style={{ padding: '4px 8px', fontSize: '11px', flex: 1 }} onClick={() => setResolvingId(null)}>Cancel</button>
-                        <button type="submit" className="btn-primary" style={{ padding: '4px 8px', fontSize: '11px', flex: 1, justifyContent: 'center' }}>Submit</button>
+                        <button type="button" className="btn-secondary" style={{ padding: '4px 8px', fontSize: '11px', flex: 1 }} onClick={() => { setResolvingId(null); setResFileName(''); setResFileData(null); }} disabled={isSubmittingResolution}>Cancel</button>
+                        <button type="submit" className="btn-primary" style={{ padding: '4px 8px', fontSize: '11px', flex: 1, justifyContent: 'center' }} disabled={isSubmittingResolution}>
+                          {isSubmittingResolution ? <ButtonLoading label="Submitting..." /> : 'Mark Resolved'}
+                        </button>
                       </div>
                     </form>
                   ) : (

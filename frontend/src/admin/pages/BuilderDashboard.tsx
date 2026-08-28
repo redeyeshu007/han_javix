@@ -204,7 +204,7 @@ const BuilderDashboard: React.FC = () => {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                           <div>
                             <div style={{ fontSize: '18px', fontWeight: 700, color: '#0F172A', marginBottom: '4px' }}>{p.name}</div>
-                            <div style={{ fontSize: '14px', color: '#64748B' }}>{p.address}</div>
+                            <div style={{ fontSize: '14px', color: '#64748B' }}>{p.unitsCount} units &bull; {p.status}</div>
                           </div>
                           <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <ChevronRight size={20} color="#64748B" />

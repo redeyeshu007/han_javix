@@ -2,15 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { AlertTriangle, Search, ChevronRight } from 'lucide-react';
 import { mockDb, Defect, Unit } from '../../services/mockDb';
+import { useAuth } from '../../context/AuthContext';
+import { canAccessDefect } from '../../utils/access';
 
 const DefectsList: React.FC = () => {
+  const { user } = useAuth();
   const [defects, setDefects] = useState<Defect[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'All' | 'Open' | 'Assigned' | 'In Progress' | 'Resolved' | 'Closed'>('All');
 
   const loadDefects = () => {
-    setDefects(mockDb.getDefects());
+    setDefects(mockDb.getDefects().filter(d => canAccessDefect(user, d)));
     setUnits(mockDb.getUnits());
   };
 
@@ -18,7 +21,7 @@ const DefectsList: React.FC = () => {
     loadDefects();
     const interval = setInterval(loadDefects, 2000);
     return () => clearInterval(interval);
-  }, []);
+  }, [user]);
 
   const filtered = defects.filter(d => {
     const unit = units.find(u => u.id === d.unitId);

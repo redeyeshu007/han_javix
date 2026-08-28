@@ -11,7 +11,10 @@ export interface User {
   builderId?: string;
   projectId?: string;
   unitId?: string;
+  assignedProjectIds?: string[]; // project_manager / site_engineer / crm / accounts scoping
   status: 'Active' | 'Inactive';
+  notifyEmail?: boolean;
+  notifySystemAlerts?: boolean;
 }
 
 export interface Contractor {
@@ -24,7 +27,7 @@ export interface Contractor {
   phone: string;
   trade: string;
   status: string;
-  assignedProjects: string[]; // List of project IDs
+  assignedProjectIds: string[]; // List of project IDs
   address?: string;
   notes?: string;
 }
@@ -82,6 +85,11 @@ export interface Unit {
   defectsCleared: boolean;
   keysHandedOver: boolean;
   approvalsCleared: boolean;
+  type?: string;
+  areaSqFt?: number;
+  bedrooms?: number;
+  bathrooms?: number;
+  parking?: string;
 }
 
 export interface Inspection {
@@ -119,7 +127,7 @@ export interface Defect {
   location: string;
   severity: 'Low' | 'Medium' | 'High';
   contractorId: string;
-  status: 'Open' | 'Assigned' | 'In Progress' | 'Resolved' | 'Reinspection' | 'Closed';
+  status: 'Open' | 'Assigned' | 'In Progress' | 'Resolved' | 'Closed';
   evidence: string[];
   resolutionEvidence?: string;
   timeline: { status: string; date: string; note: string }[];
@@ -161,7 +169,7 @@ export interface Document {
   fileSize: string;
   uploadedBy: string;
   uploadedAt: string;
-  status: 'Pending' | 'Under Review' | 'Verified' | 'Rejected';
+  status: 'Pending' | 'Verified' | 'Rejected';
   description?: string;
   fileData?: string; // base64 or temporary object URL
   rejectionReason?: string;
@@ -199,177 +207,87 @@ export interface Notification {
   link?: string;
 }
 
+export interface Plan {
+  id: string;
+  name: string;
+  description: string;
+  price: string;
+  billingCycle: 'Monthly' | 'Yearly';
+  maxProjects: string;
+  maxUnits: string;
+  maxUsers: string;
+  storageLimit: string;
+  status: 'Active' | 'Inactive';
+}
+
+export interface ChecklistTemplate {
+  id: string;
+  name: string;
+  category: string;
+  description?: string;
+  items: number;
+  status: 'Active' | 'Draft' | 'Archived';
+  updated: string;
+}
+
+export interface CommTemplate {
+  id: string;
+  name: string;
+  type: 'Report' | 'Letter' | 'Certificate' | 'Email';
+  description?: string;
+  status: 'Active' | 'Draft' | 'Archived';
+  updated: string;
+}
+
 export interface Payment {
   id: string;
+  projectId: string;
   unitId: string;
   customerId: string;
-  title: string;
   amount: number;
-  status: 'Pending' | 'Partially Cleared' | 'Cleared' | 'On Hold';
-  dueDate: string;
+  paymentType: string;
+  paymentDate: string;
+  paymentMethod: string;
+  reference: string;
+  status: 'Pending Verification' | 'Verified' | 'Cleared' | 'Rejected';
+  notes?: string;
+  proofFileName?: string;
+  proofFileData?: string;
+  createdBy: string;
+  verifiedBy?: string;
+  verifiedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  
+  // Keep legacy title for compatibility or map paymentType to title.
+  title?: string;
+  dueDate?: string;
   clearedDate?: string;
 }
 
 
 // Initial seed data - User Requested Controlled Test Data
 const initialUsers: User[] = [
-  { id: 'USR-000', name: 'Super Admin', email: 'admin@handoverly.com', phone: '', role: 'super_admin', password: 'Admin@123', status: 'Active' },
+  { id: 'USR-000', name: 'Super Admin', email: 'admin@handoverly.com', phone: '', role: 'super_admin', password: 'Admin@123', status: 'Active' }
 ];
 
-const initialBuilders: Builder[] = [
-  { id: 'TEST-BLD-001', name: 'Handoverly Test Builders', contact: 'Test Builder Admin', email: 'admin@testbuilders.com', phone: '+1 (555) 000-0001', address: '1 Test Avenue', brn: 'BRN-TEST-1', plan: 'Enterprise', status: 'Active', joined: '2026-01-01' }
-];
-
-const initialProjects: Project[] = [
-  { id: 'TEST-PRJ-001', builderId: 'TEST-BLD-001', name: 'Handoverly Heights', status: 'Active', progress: 50, blocksCount: 1, unitsCount: 20 }
-];
-
-const initialBlocks: Block[] = [
-  { id: 'TEST-BLK-001', builderId: 'TEST-BLD-001', projectId: 'TEST-PRJ-001', name: 'Tower 1' }
-];
-
-const initialFloors: Floor[] = [
-  { id: 'TEST-FLR-G', builderId: 'TEST-BLD-001', projectId: 'TEST-PRJ-001', blockId: 'TEST-BLK-001', name: 'Ground Floor' },
-  { id: 'TEST-FLR-1', builderId: 'TEST-BLD-001', projectId: 'TEST-PRJ-001', blockId: 'TEST-BLK-001', name: 'Floor 1' },
-  { id: 'TEST-FLR-2', builderId: 'TEST-BLD-001', projectId: 'TEST-PRJ-001', blockId: 'TEST-BLK-001', name: 'Floor 2' },
-  { id: 'TEST-FLR-3', builderId: 'TEST-BLD-001', projectId: 'TEST-PRJ-001', blockId: 'TEST-BLK-001', name: 'Floor 3' },
-  { id: 'TEST-FLR-4', builderId: 'TEST-BLD-001', projectId: 'TEST-PRJ-001', blockId: 'TEST-BLK-001', name: 'Floor 4' }
-];
-
-const initialUnits: Unit[] = [
-  // Ground Floor
-  { id: 'TEST-UNIT-G01', builderId: 'TEST-BLD-001', projectId: 'TEST-PRJ-001', blockId: 'TEST-BLK-001', floorId: 'TEST-FLR-G', name: 'G-01', status: 'Defects Found', customerId: 'TEST-CST-001', inspectionStatus: 'Failed', docsCleared: true, paymentCleared: true, defectsCleared: false, keysHandedOver: true, approvalsCleared: true },
-  { id: 'TEST-UNIT-G02', builderId: 'TEST-BLD-001', projectId: 'TEST-PRJ-001', blockId: 'TEST-BLK-001', floorId: 'TEST-FLR-G', name: 'G-02', status: 'Under Construction', customerId: null, inspectionStatus: 'Pending', docsCleared: false, paymentCleared: false, defectsCleared: false, keysHandedOver: false, approvalsCleared: false },
-  { id: 'TEST-UNIT-G03', builderId: 'TEST-BLD-001', projectId: 'TEST-PRJ-001', blockId: 'TEST-BLK-001', floorId: 'TEST-FLR-G', name: 'G-03', status: 'Under Construction', customerId: null, inspectionStatus: 'Pending', docsCleared: false, paymentCleared: false, defectsCleared: false, keysHandedOver: false, approvalsCleared: false },
-  { id: 'TEST-UNIT-G04', builderId: 'TEST-BLD-001', projectId: 'TEST-PRJ-001', blockId: 'TEST-BLK-001', floorId: 'TEST-FLR-G', name: 'G-04', status: 'Under Construction', customerId: null, inspectionStatus: 'Pending', docsCleared: false, paymentCleared: false, defectsCleared: false, keysHandedOver: false, approvalsCleared: false },
-  // Floor 1
-  { id: 'TEST-UNIT-101', builderId: 'TEST-BLD-001', projectId: 'TEST-PRJ-001', blockId: 'TEST-BLK-001', floorId: 'TEST-FLR-1', name: '101', status: 'Approved', customerId: 'TEST-CST-002', inspectionStatus: 'Passed', docsCleared: true, paymentCleared: true, defectsCleared: true, keysHandedOver: true, approvalsCleared: true },
-  { id: 'TEST-UNIT-102', builderId: 'TEST-BLD-001', projectId: 'TEST-PRJ-001', blockId: 'TEST-BLK-001', floorId: 'TEST-FLR-1', name: '102', status: 'Under Construction', customerId: null, inspectionStatus: 'Pending', docsCleared: false, paymentCleared: false, defectsCleared: false, keysHandedOver: false, approvalsCleared: false },
-  { id: 'TEST-UNIT-103', builderId: 'TEST-BLD-001', projectId: 'TEST-PRJ-001', blockId: 'TEST-BLK-001', floorId: 'TEST-FLR-1', name: '103', status: 'Under Construction', customerId: null, inspectionStatus: 'Pending', docsCleared: false, paymentCleared: false, defectsCleared: false, keysHandedOver: false, approvalsCleared: false },
-  { id: 'TEST-UNIT-104', builderId: 'TEST-BLD-001', projectId: 'TEST-PRJ-001', blockId: 'TEST-BLK-001', floorId: 'TEST-FLR-1', name: '104', status: 'Under Construction', customerId: null, inspectionStatus: 'Pending', docsCleared: false, paymentCleared: false, defectsCleared: false, keysHandedOver: false, approvalsCleared: false },
-  // Floor 2
-  { id: 'TEST-UNIT-201', builderId: 'TEST-BLD-001', projectId: 'TEST-PRJ-001', blockId: 'TEST-BLK-001', floorId: 'TEST-FLR-2', name: '201', status: 'Approved', customerId: 'TEST-CST-003', inspectionStatus: 'Passed', docsCleared: false, paymentCleared: true, defectsCleared: true, keysHandedOver: true, approvalsCleared: true },
-  { id: 'TEST-UNIT-202', builderId: 'TEST-BLD-001', projectId: 'TEST-PRJ-001', blockId: 'TEST-BLK-001', floorId: 'TEST-FLR-2', name: '202', status: 'Under Construction', customerId: null, inspectionStatus: 'Pending', docsCleared: false, paymentCleared: false, defectsCleared: false, keysHandedOver: false, approvalsCleared: false },
-  { id: 'TEST-UNIT-203', builderId: 'TEST-BLD-001', projectId: 'TEST-PRJ-001', blockId: 'TEST-BLK-001', floorId: 'TEST-FLR-2', name: '203', status: 'Under Construction', customerId: null, inspectionStatus: 'Pending', docsCleared: false, paymentCleared: false, defectsCleared: false, keysHandedOver: false, approvalsCleared: false },
-  { id: 'TEST-UNIT-204', builderId: 'TEST-BLD-001', projectId: 'TEST-PRJ-001', blockId: 'TEST-BLK-001', floorId: 'TEST-FLR-2', name: '204', status: 'Under Construction', customerId: null, inspectionStatus: 'Pending', docsCleared: false, paymentCleared: false, defectsCleared: false, keysHandedOver: false, approvalsCleared: false },
-  // Floor 3
-  { id: 'TEST-UNIT-301', builderId: 'TEST-BLD-001', projectId: 'TEST-PRJ-001', blockId: 'TEST-BLK-001', floorId: 'TEST-FLR-3', name: '301', status: 'Ready for Inspection', customerId: 'TEST-CST-004', inspectionStatus: 'Pending', docsCleared: true, paymentCleared: true, defectsCleared: false, keysHandedOver: false, approvalsCleared: false },
-  { id: 'TEST-UNIT-302', builderId: 'TEST-BLD-001', projectId: 'TEST-PRJ-001', blockId: 'TEST-BLK-001', floorId: 'TEST-FLR-3', name: '302', status: 'Under Construction', customerId: null, inspectionStatus: 'Pending', docsCleared: false, paymentCleared: false, defectsCleared: false, keysHandedOver: false, approvalsCleared: false },
-  { id: 'TEST-UNIT-303', builderId: 'TEST-BLD-001', projectId: 'TEST-PRJ-001', blockId: 'TEST-BLK-001', floorId: 'TEST-FLR-3', name: '303', status: 'Under Construction', customerId: null, inspectionStatus: 'Pending', docsCleared: false, paymentCleared: false, defectsCleared: false, keysHandedOver: false, approvalsCleared: false },
-  { id: 'TEST-UNIT-304', builderId: 'TEST-BLD-001', projectId: 'TEST-PRJ-001', blockId: 'TEST-BLK-001', floorId: 'TEST-FLR-3', name: '304', status: 'Under Construction', customerId: null, inspectionStatus: 'Pending', docsCleared: false, paymentCleared: false, defectsCleared: false, keysHandedOver: false, approvalsCleared: false },
-  // Floor 4
-  { id: 'TEST-UNIT-401', builderId: 'TEST-BLD-001', projectId: 'TEST-PRJ-001', blockId: 'TEST-BLK-001', floorId: 'TEST-FLR-4', name: '401', status: 'Defects Found', customerId: 'TEST-CST-005', inspectionStatus: 'Failed', docsCleared: true, paymentCleared: true, defectsCleared: false, keysHandedOver: false, approvalsCleared: false },
-  { id: 'TEST-UNIT-402', builderId: 'TEST-BLD-001', projectId: 'TEST-PRJ-001', blockId: 'TEST-BLK-001', floorId: 'TEST-FLR-4', name: '402', status: 'Under Construction', customerId: null, inspectionStatus: 'Pending', docsCleared: false, paymentCleared: false, defectsCleared: false, keysHandedOver: false, approvalsCleared: false },
-  { id: 'TEST-UNIT-403', builderId: 'TEST-BLD-001', projectId: 'TEST-PRJ-001', blockId: 'TEST-BLK-001', floorId: 'TEST-FLR-4', name: '403', status: 'Under Construction', customerId: null, inspectionStatus: 'Pending', docsCleared: false, paymentCleared: false, defectsCleared: false, keysHandedOver: false, approvalsCleared: false },
-  { id: 'TEST-UNIT-404', builderId: 'TEST-BLD-001', projectId: 'TEST-PRJ-001', blockId: 'TEST-BLK-001', floorId: 'TEST-FLR-4', name: '404', status: 'Under Construction', customerId: null, inspectionStatus: 'Pending', docsCleared: false, paymentCleared: false, defectsCleared: false, keysHandedOver: false, approvalsCleared: false },
-];
-
-const initialCustomers: Customer[] = [
-  { id: 'TEST-CST-001', builderId: 'TEST-BLD-001', projectId: 'TEST-PRJ-001', unitId: 'TEST-UNIT-G01', name: 'Arun Kumar', email: 'arun@example.com', phone: '+91 9876543210', status: 'Active', handoverStatus: 'Inspection Scheduled' },
-  { id: 'TEST-CST-002', builderId: 'TEST-BLD-001', projectId: 'TEST-PRJ-001', unitId: 'TEST-UNIT-101', name: 'Priya Kumar', email: 'priya@example.com', phone: '+91 9876543211', status: 'Active', handoverStatus: 'Inspection Scheduled' },
-  { id: 'TEST-CST-003', builderId: 'TEST-BLD-001', projectId: 'TEST-PRJ-001', unitId: 'TEST-UNIT-201', name: 'David Raj', email: 'david@example.com', phone: '+91 9876543212', status: 'Active', handoverStatus: 'Awaiting Review' },
-  { id: 'TEST-CST-004', builderId: 'TEST-BLD-001', projectId: 'TEST-PRJ-001', unitId: 'TEST-UNIT-301', name: 'Sarah Joseph', email: 'sarah@example.com', phone: '+91 9876543213', status: 'Active', handoverStatus: 'Awaiting Review' },
-  { id: 'TEST-CST-005', builderId: 'TEST-BLD-001', projectId: 'TEST-PRJ-001', unitId: 'TEST-UNIT-401', name: 'Michael John', email: 'michael@example.com', phone: '+91 9876543214', status: 'Active', handoverStatus: 'Awaiting Review' },
-];
-
-const initialDefects: Defect[] = [
-  {
-    id: 'DEF-TEST-001', unitId: 'TEST-UNIT-G01', builderId: 'TEST-BLD-001', projectId: 'TEST-PRJ-001',
-    title: 'Socket not functioning', description: 'Electrical socket in living room has no power.',
-    location: 'Living Room', severity: 'Medium', contractorId: 'CON-001', status: 'Open', evidence: [],
-    timeline: [{ status: 'Open', date: '2026-08-27', note: 'Created by Test Site Engineer' }]
-  },
-  {
-    id: 'DEF-TEST-002', unitId: 'TEST-UNIT-101', builderId: 'TEST-BLD-001', projectId: 'TEST-PRJ-001',
-    title: 'Water leakage below wash basin', description: 'Minor leak from p-trap.',
-    location: 'Master Bath', severity: 'High', contractorId: 'CON-001', status: 'Assigned', evidence: [],
-    timeline: [{ status: 'Open', date: '2026-08-27', note: 'Created' }, { status: 'Assigned', date: '2026-08-27', note: 'Assigned to CON-001' }]
-  },
-  {
-    id: 'DEF-TEST-003', unitId: 'TEST-UNIT-201', builderId: 'TEST-BLD-001', projectId: 'TEST-PRJ-001',
-    title: 'Wall surface crack', description: 'Hairline crack near window.',
-    location: 'Bedroom 1', severity: 'Low', contractorId: 'CON-001', status: 'In Progress', evidence: [],
-    timeline: [{ status: 'Open', date: '2026-08-27', note: 'Created' }, { status: 'In Progress', date: '2026-08-27', note: 'Work started' }]
-  },
-  {
-    id: 'DEF-TEST-004', unitId: 'TEST-UNIT-301', builderId: 'TEST-BLD-001', projectId: 'TEST-PRJ-001',
-    title: 'Balcony door alignment issue', description: 'Door scraping against frame.',
-    location: 'Balcony', severity: 'Medium', contractorId: 'CON-001', status: 'Resolved', evidence: [],
-    timeline: [{ status: 'Open', date: '2026-08-27', note: 'Created' }, { status: 'Resolved', date: '2026-08-27', note: 'Realigned hinges' }]
-  },
-  {
-    id: 'DEF-TEST-005', unitId: 'TEST-UNIT-401', builderId: 'TEST-BLD-001', projectId: 'TEST-PRJ-001',
-    title: 'Tile finishing incomplete', description: 'Grout missing in some areas.',
-    location: 'Kitchen', severity: 'Low', contractorId: 'CON-001', status: 'Reinspection', evidence: [],
-    timeline: [{ status: 'Open', date: '2026-08-27', note: 'Created' }, { status: 'Reinspection', date: '2026-08-27', note: 'Ready for check' }]
-  },
-];
-
-const initialContractors: Contractor[] = [
-  { 
-    id: 'CON-001', 
-    builderId: 'TEST-BLD-001', 
-    companyName: 'Test Contractor', 
-    contactPersonFirstName: 'Test',
-    contactPersonLastName: 'Contractor',
-    email: 'testcontractor@example.com', 
-    phone: '+1 (555) 111-2222',
-    trade: 'General',
-    status: 'Active',
-    assignedProjects: ['TEST-PRJ-001']
-  }
-];
-
+const initialBuilders: Builder[] = [];
+const initialProjects: Project[] = [];
+const initialBlocks: Block[] = [];
+const initialFloors: Floor[] = [];
+const initialUnits: Unit[] = [];
+const initialCustomers: Customer[] = [];
+const initialDefects: Defect[] = [];
+const initialContractors: Contractor[] = [];
 const initialSupportTickets: SupportTicket[] = [];
-
-const initialChecklists = [
-  { id: 'CHK-001', name: 'Standard Handover Checklist', category: 'General', items: ['Electrical Socket condition', 'Plumbing Water pressure', 'Civil Wall condition', 'Doors alignment'], status: 'Active', updated: '2026-08-27' }
-];
-
+const initialChecklists: any[] = [];
 const initialServiceRequests: ServiceRequest[] = [];
-
-const initialDocuments: Document[] = [
-  {
-    id: 'DOC-001',
-    builderId: 'TEST-BLD-001',
-    projectId: 'TEST-PRJ-001',
-    unitId: 'TEST-UNIT-G01',
-    customerId: 'TEST-CST-001',
-    category: 'Legal',
-    documentType: 'Sale Agreement',
-    name: 'Sale Agreement',
-    fileName: 'Sale_Agreement_G01.pdf',
-    fileType: 'application/pdf',
-    fileSize: '2.4 MB',
-    uploadedBy: 'Builder Admin',
-    uploadedAt: '2026-08-20',
-    status: 'Verified',
-  },
-  {
-    id: 'DOC-002',
-    builderId: 'TEST-BLD-001',
-    projectId: 'TEST-PRJ-001',
-    unitId: 'TEST-UNIT-G01',
-    customerId: 'TEST-CST-001',
-    category: 'Financial',
-    documentType: 'Payment Receipt',
-    name: 'Payment Receipt (Installment 1)',
-    fileName: 'Payment_Receipt_1.pdf',
-    fileType: 'application/pdf',
-    fileSize: '1.1 MB',
-    uploadedBy: 'Accounts',
-    uploadedAt: '2026-08-25',
-    status: 'Verified',
-  }
-];
-
-const initialTransition: AssociationTransition[] = [
-  { builderId: 'TEST-BLD-001', step: 'Preparation', commonAreas: 'Pending', assets: 'Pending', contracts: 'Pending', financials: 'Pending', legals: 'Pending', commitments: 'Pending' }
-];
+const initialDocuments: Document[] = [];
+const initialTransition: AssociationTransition[] = [];
 
 // Helper to initialize database if empty
 // USING PREFIX handoverly_db TO ENSURE A CLEAN STATE FOR TESTING
-const DB_KEY = 'handoverly_db';
+const DB_KEY = 'handoverly_db_v4';
 
 export interface Database {
   users: User[];
@@ -382,7 +300,7 @@ export interface Database {
   defects: Defect[];
   contractors: Contractor[];
   supportTickets: SupportTicket[];
-  checklists: any[];
+  checklists: ChecklistTemplate[];
   serviceRequests: ServiceRequest[];
   documents: Document[];
   transition: AssociationTransition[];
@@ -390,6 +308,8 @@ export interface Database {
   notifications: Notification[];
   payments: Payment[];
   inspections: Inspection[];
+  plans: Plan[];
+  templates: CommTemplate[];
 }
 
 export const initMockDb = (): Database => {
@@ -411,38 +331,28 @@ export const initMockDb = (): Database => {
       transition: initialTransition,
       auditLogs: [],
       notifications: [],
-      payments: [
-        {
-          id: 'PAY-001',
-          unitId: 'TEST-UNIT-G01',
-          customerId: 'TEST-CST-001',
-          title: 'Booking Advance',
-          amount: 50000,
-          status: 'Cleared',
-          dueDate: '2026-08-01',
-          clearedDate: '2026-08-02'
-        },
-        {
-          id: 'PAY-002',
-          unitId: 'TEST-UNIT-G01',
-          customerId: 'TEST-CST-001',
-          title: 'Installment 1',
-          amount: 150000,
-          status: 'Pending',
-          dueDate: '2026-09-01'
-        }
-      ],
-      inspections: []
+      payments: [],
+      inspections: [],
+      plans: [],
+      templates: []
     };
     localStorage.setItem(DB_KEY, JSON.stringify(initialDb));
   }
   return JSON.parse(localStorage.getItem(DB_KEY)!);
 };
 
+// Backfills arrays that didn't exist in a Database shape persisted by an earlier version of this file.
+const withDefaults = (db: Database): Database => ({
+  ...db,
+  plans: db.plans || [],
+  templates: db.templates || [],
+  checklists: db.checklists || []
+});
+
 const getDb = (): Database => {
   const dbStr = localStorage.getItem(DB_KEY);
   if (!dbStr) return initMockDb();
-  return JSON.parse(dbStr);
+  return withDefaults(JSON.parse(dbStr));
 };
 
 const saveDb = (db: Database) => {
@@ -542,9 +452,78 @@ export const mockDb = {
   },
   getContractors: (): Contractor[] => getDb().contractors,
   getSupportTickets: (): SupportTicket[] => getDb().supportTickets,
-  getChecklists: (): any[] => getDb().checklists,
+  getChecklists: (): ChecklistTemplate[] => getDb().checklists,
   getServiceRequests: (): ServiceRequest[] => getDb().serviceRequests,
   getTransitions: (): AssociationTransition[] => getDb().transition,
+
+  createChecklist: (checklist: Omit<ChecklistTemplate, 'id' | 'updated'>): ChecklistTemplate => {
+    const db = getDb();
+    const newChecklist: ChecklistTemplate = {
+      ...checklist,
+      id: `CHK-${String(db.checklists.length + 1).padStart(3, '0')}`,
+      updated: new Date().toISOString().split('T')[0]
+    };
+    db.checklists.push(newChecklist);
+    saveDb(db);
+    return newChecklist;
+  },
+
+  updateChecklist: (id: string, updated: Partial<ChecklistTemplate>): ChecklistTemplate => {
+    const db = getDb();
+    const idx = db.checklists.findIndex(c => c.id === id);
+    if (idx !== -1) {
+      db.checklists[idx] = { ...db.checklists[idx], ...updated, updated: new Date().toISOString().split('T')[0] };
+      saveDb(db);
+      return db.checklists[idx];
+    }
+    throw new Error('Checklist not found');
+  },
+
+  getPlans: (): Plan[] => getDb().plans,
+
+  createPlan: (plan: Omit<Plan, 'id'>): Plan => {
+    const db = getDb();
+    const newPlan: Plan = { ...plan, id: `PLN-${String(db.plans.length + 1).padStart(3, '0')}` };
+    db.plans.push(newPlan);
+    saveDb(db);
+    return newPlan;
+  },
+
+  updatePlan: (id: string, updated: Partial<Plan>): Plan => {
+    const db = getDb();
+    const idx = db.plans.findIndex(p => p.id === id);
+    if (idx !== -1) {
+      db.plans[idx] = { ...db.plans[idx], ...updated };
+      saveDb(db);
+      return db.plans[idx];
+    }
+    throw new Error('Plan not found');
+  },
+
+  getTemplates: (): CommTemplate[] => getDb().templates,
+
+  createTemplate: (template: Omit<CommTemplate, 'id' | 'updated'>): CommTemplate => {
+    const db = getDb();
+    const newTemplate: CommTemplate = {
+      ...template,
+      id: `TPL-${String(db.templates.length + 1).padStart(3, '0')}`,
+      updated: new Date().toISOString().split('T')[0]
+    };
+    db.templates.push(newTemplate);
+    saveDb(db);
+    return newTemplate;
+  },
+
+  updateTemplate: (id: string, updated: Partial<CommTemplate>): CommTemplate => {
+    const db = getDb();
+    const idx = db.templates.findIndex(t => t.id === id);
+    if (idx !== -1) {
+      db.templates[idx] = { ...db.templates[idx], ...updated, updated: new Date().toISOString().split('T')[0] };
+      saveDb(db);
+      return db.templates[idx];
+    }
+    throw new Error('Template not found');
+  },
 
   // CRUD Mutations (writes to localStorage)
   createContractor: (contractor: Omit<Contractor, 'id'>): Contractor => {
@@ -646,12 +625,12 @@ export const mockDb = {
     return newFloor;
   },
 
-  createUnit: (unit: Omit<Unit, 'id' | 'status' | 'customerId' | 'inspectionStatus' | 'docsCleared' | 'paymentCleared' | 'defectsCleared' | 'keysHandedOver' | 'approvalsCleared'>): Unit => {
+  createUnit: (unit: Omit<Unit, 'id' | 'customerId' | 'inspectionStatus' | 'docsCleared' | 'paymentCleared' | 'defectsCleared' | 'keysHandedOver' | 'approvalsCleared'> & { status?: 'Under Construction' | 'Ready for Inspection' }): Unit => {
     const db = getDb();
     const newUnit: Unit = {
       ...unit,
       id: `UNIT-${String(db.units.length + 1).padStart(3, '0')}`,
-      status: 'Under Construction',
+      status: unit.status || 'Under Construction',
       customerId: null,
       inspectionStatus: 'Pending',
       docsCleared: false,
@@ -685,6 +664,22 @@ export const mockDb = {
           u.status = 'Handed Over';
         } else {
           u.status = 'Approved';
+        }
+      }
+
+      // Keep the assigned customer's handoverStatus in sync with the unit's real progress.
+      if (u.customerId) {
+        const cIdx = db.customers.findIndex(c => c.id === u.customerId);
+        if (cIdx !== -1) {
+          let handoverStatus: Customer['handoverStatus'] = 'Awaiting Review';
+          if (u.status === 'Handed Over') {
+            handoverStatus = 'Complete';
+          } else if (u.docsCleared && u.paymentCleared && u.defectsCleared && u.approvalsCleared) {
+            handoverStatus = 'Accepted';
+          } else if (u.inspectionStatus === 'Passed') {
+            handoverStatus = 'Inspection Scheduled';
+          }
+          db.customers[cIdx].handoverStatus = handoverStatus;
         }
       }
 
@@ -733,13 +728,14 @@ export const mockDb = {
     return newDefect;
   },
 
-  updateDefect: (id: string, status: Defect['status'], note: string, resolutionEvidence?: string): Defect => {
+  updateDefect: (id: string, status: Defect['status'], note: string, resolutionEvidence?: string, contractorId?: string): Defect => {
     const db = getDb();
     const idx = db.defects.findIndex(d => d.id === id);
     if (idx !== -1) {
       const d = db.defects[idx];
       d.status = status;
       if (resolutionEvidence) d.resolutionEvidence = resolutionEvidence;
+      if (contractorId) d.contractorId = contractorId;
       d.timeline.push({
         status,
         date: new Date().toISOString().split('T')[0],
@@ -889,6 +885,19 @@ export const mockDb = {
       db.documents[idx].status = status;
       if (rejectionReason) db.documents[idx].rejectionReason = rejectionReason;
       saveDb(db);
+
+      // Keep the unit's docsCleared/approvalsCleared flags in sync with real document state,
+      // mirroring how updatePaymentStatus auto-syncs paymentCleared below.
+      const unitId = db.documents[idx].unitId;
+      if (unitId) {
+        const unitDocs = db.documents.filter(d => d.unitId === unitId);
+        const ownershipDocs = unitDocs.filter(d => d.category === 'Ownership & Identity Documents');
+        const municipalDocs = unitDocs.filter(d => d.category === 'Municipal Certificate of Occupancy');
+        const docsCleared = ownershipDocs.length > 0 && ownershipDocs.every(d => d.status === 'Verified');
+        const approvalsCleared = municipalDocs.length > 0 && municipalDocs.every(d => d.status === 'Verified');
+        mockDb.updateUnit(unitId, { docsCleared, approvalsCleared });
+      }
+
       return db.documents[idx];
     }
     throw new Error('Document not found');
@@ -955,11 +964,18 @@ export const mockDb = {
     saveDb(db);
     return newPayment;
   },
-  updatePaymentStatus: (id: string, status: Payment['status']): Payment => {
+  updatePaymentStatus: (id: string, status: Payment['status'], verifiedBy?: string): Payment => {
     const db = getDb();
     const idx = db.payments.findIndex(p => p.id === id);
     if (idx !== -1) {
       db.payments[idx].status = status;
+      db.payments[idx].updatedAt = new Date().toISOString();
+      
+      if (status === 'Verified' || status === 'Cleared') {
+        db.payments[idx].verifiedBy = verifiedBy;
+        db.payments[idx].verifiedAt = new Date().toISOString();
+      }
+      
       if (status === 'Cleared') {
         db.payments[idx].clearedDate = new Date().toISOString().split('T')[0];
       }

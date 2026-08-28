@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Key, ChevronRight, Check, X } from 'lucide-react';
+import { Search, Key, Check, X } from 'lucide-react';
 import { mockDb, Unit, Project } from '../../services/mockDb';
+import { computeHandoverReadiness } from '../../utils/handoverReadiness';
 
 const HandoverWorkspace: React.FC = () => {
   const [units, setUnits] = useState<Unit[]>([]);
@@ -72,12 +73,9 @@ const HandoverWorkspace: React.FC = () => {
             const unitDocs = documents.filter(d => d.unitId === u.id);
             const unitPayments = payments.filter(p => p.unitId === u.id);
             const unitDefects = defects.filter(d => d.unitId === u.id);
-            
-            const docsCleared = unitDocs.length > 0 && unitDocs.every(d => d.status === 'Verified');
-            const paymentCleared = unitPayments.length > 0 && unitPayments.every(p => p.status === 'Cleared');
-            const defectsCleared = unitDefects.length > 0 ? unitDefects.every(d => d.status === 'Resolved' || d.status === 'Closed') : u.inspectionStatus === 'Passed';
-            
-            const isReady = docsCleared && paymentCleared && defectsCleared && u.approvalsCleared;
+
+            const { docsCleared, approvalsCleared, paymentCleared, defectsCleared, isReadyForHandover: isReady } =
+              computeHandoverReadiness(u, unitDocs, unitPayments, unitDefects);
 
             return (
               <div key={u.id} style={{
@@ -125,7 +123,7 @@ const HandoverWorkspace: React.FC = () => {
                   </div>
                   <div style={{ textAlign: 'center' }}>
                     <span style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: 'var(--admin-text-secondary)', marginBottom: '4px' }}>APPROVAL</span>
-                    {u.approvalsCleared ? <Check size={16} color="var(--admin-accent)" /> : <X size={16} color="#DC2626" />}
+                    {approvalsCleared ? <Check size={16} color="var(--admin-accent)" /> : <X size={16} color="#DC2626" />}
                   </div>
                 </div>
 

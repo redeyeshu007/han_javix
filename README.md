@@ -47,6 +47,7 @@ npm run dev
 ```
 The frontend is configured to use `http://localhost:5173`. Make sure `VITE_API_BASE_URL=http://localhost:8000/api/v1` is set in the frontend's `.env` when you need it to communicate with the backend.
 
+
 ## Testing
 To run Django tests:
 ```bash

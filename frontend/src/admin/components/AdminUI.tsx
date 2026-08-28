@@ -1,5 +1,5 @@
 import React from 'react';
-import { LucideIcon } from 'lucide-react';
+import { LucideIcon, Check, Clock, X } from 'lucide-react';
 import '../admin.css';
 
 interface PageHeaderProps {
@@ -40,17 +40,21 @@ export const StatCard: React.FC<StatCardProps> = ({ title, value, trend }) => (
 );
 
 interface StatusBadgeProps {
-  status: 'Active' | 'Pending' | 'Suspended' | 'Draft' | 'Open' | 'Resolved';
+  status: string;
 }
 
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
-  let type = 'neutral';
-  if (status === 'Active' || status === 'Resolved') type = 'success';
-  if (status === 'Pending' || status === 'Draft' || status === 'Open') type = 'warning';
-  if (status === 'Suspended') type = 'error';
+  let type: 'success' | 'warning' | 'error' | 'neutral' = 'neutral';
+  if (status === 'Active' || status === 'Resolved' || status === 'Completed' || status === 'Verified' || status === 'Cleared' || status === 'Approved') type = 'success';
+  if (status === 'Pending' || status === 'Draft' || status === 'Open' || status === 'Planning' || status === 'In Progress') type = 'warning';
+  if (status === 'Suspended' || status === 'Archived' || status === 'Inactive' || status === 'Rejected') type = 'error';
+
+  // Status is never conveyed by color alone — an icon always accompanies the label.
+  const Icon = type === 'success' ? Check : type === 'error' ? X : type === 'warning' ? Clock : null;
 
   return (
     <span className={`status-badge status-badge--${type}`}>
+      {Icon && <Icon size={12} strokeWidth={2.5} style={{ marginRight: '4px', verticalAlign: '-1px' }} />}
       {status}
     </span>
   );

@@ -1,32 +1,36 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Download, Eye, Check, X, ShieldCheck, Filter } from 'lucide-react';
+import { FileText, Download, Eye, Check, X, Filter } from 'lucide-react';
 import { useRole } from '../../context/RoleContext';
-import { documentService, unitsApi, auditService } from '../../api/services';
+import { documentService, unitsApi, projectsApi, auditService } from '../../api/services';
 import { PageLoading, ButtonLoading } from '../../components/LoadingState';
-import { Document, Unit } from '../../services/mockDb';
+import { Document, Unit, Project } from '../../services/mockDb';
 import '../admin.css';
 
 const Documents: React.FC = () => {
-  const { activeProjectId, activeRole } = useRole();
+  const { activeRole } = useRole();
   const [loading, setLoading] = useState(true);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
-  
+  const [projects, setProjects] = useState<Project[]>([]);
+
   const [statusFilter, setStatusFilter] = useState('All');
-  
+
   const [verifying, setVerifying] = useState<string | null>(null);
   const [rejecting, setRejecting] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
 
+  // Platform-wide verification center: shows documents across every builder/project, not scoped to one project.
   const fetchData = async () => {
     try {
       setLoading(true);
-      const docs = await documentService.getDocuments();
-      const projectDocs = docs.filter(d => d.projectId === activeProjectId);
-      setDocuments(projectDocs);
-      
-      const unitsList = await unitsApi.getUnits(activeProjectId);
+      const [docs, unitsList, projectsList] = await Promise.all([
+        documentService.getDocuments(),
+        unitsApi.getUnits(),
+        projectsApi.getProjects()
+      ]);
+      setDocuments(docs);
       setUnits(unitsList);
+      setProjects(projectsList);
     } catch (error) {
       console.error('Error fetching documents', error);
     } finally {
@@ -36,14 +40,14 @@ const Documents: React.FC = () => {
 
   useEffect(() => {
     fetchData();
-  }, [activeProjectId]);
+  }, []);
 
-  const handleVerify = async (id: string) => {
+  const handleVerify = async (id: string, projectId?: string) => {
     setVerifying(id);
     try {
       await documentService.verifyDocument(id);
       await auditService.createAuditLog({
-        projectId: activeProjectId,
+        projectId,
         action: 'Document Verified',
         actor: activeRole || 'Admin',
         details: `Verified document with ID: ${id}`
@@ -56,7 +60,7 @@ const Documents: React.FC = () => {
     }
   };
 
-  const handleReject = async (id: string) => {
+  const handleReject = async (id: string, projectId?: string) => {
     if (!rejectReason.trim()) {
       alert("Please provide a rejection reason.");
       return;
@@ -65,7 +69,7 @@ const Documents: React.FC = () => {
     try {
       await documentService.rejectDocument(id, rejectReason);
       await auditService.createAuditLog({
-        projectId: activeProjectId,
+        projectId,
         action: 'Document Rejected',
         actor: activeRole || 'Admin',
         details: `Rejected document with ID: ${id}. Reason: ${rejectReason}`
@@ -78,6 +82,11 @@ const Documents: React.FC = () => {
     } finally {
       setVerifying(null);
     }
+  };
+
+  const getProjectName = (projectId?: string) => {
+    if (!projectId) return 'N/A';
+    return projects.find(p => p.id === projectId)?.name || projectId;
   };
 
   const filteredDocs = documents.filter(doc => 
@@ -151,7 +160,7 @@ const Documents: React.FC = () => {
                           {doc.category}
                         </span>
                         <span style={{ fontSize: '12px', color: '#64748B' }}>
-                          Unit: <strong>{getUnitName(doc.unitId)}</strong>
+                          {getProjectName(doc.projectId)} &bull; Unit: <strong>{getUnitName(doc.unitId)}</strong>
                         </span>
                       </div>
                     </td>
@@ -191,7 +200,7 @@ const Documents: React.FC = () => {
                               className="icon-button" 
                               style={{ color: '#10B981', backgroundColor: '#D1FAE5' }} 
                               title="Verify"
-                              onClick={() => handleVerify(doc.id)}
+                              onClick={() => handleVerify(doc.id, doc.projectId)}
                               disabled={verifying === doc.id}
                             >
                               {verifying === doc.id ? <ButtonLoading label="" /> : <Check size={18} />}
@@ -221,7 +230,7 @@ const Documents: React.FC = () => {
                           />
                           <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                             <button className="btn-secondary" style={{ padding: '4px 8px', fontSize: '11px' }} onClick={() => setRejecting(null)}>Cancel</button>
-                            <button className="btn-primary" style={{ padding: '4px 8px', fontSize: '11px', backgroundColor: '#EF4444' }} onClick={() => handleReject(doc.id)}>Confirm Reject</button>
+                            <button className="btn-primary" style={{ padding: '4px 8px', fontSize: '11px', backgroundColor: '#EF4444' }} onClick={() => handleReject(doc.id, doc.projectId)}>Confirm Reject</button>
                           </div>
                         </div>
                       )}

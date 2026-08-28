@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Search, Plus } from 'lucide-react';
+import { Search, Plus } from 'lucide-react';
 import { useRole } from '../../context/RoleContext';
 import { mockDb, User } from '../../services/mockDb';
+import { projectsApi } from '../../api/services';
 import { CredentialSuccessCard } from '../../components/CredentialSuccessCard';
+import { MultiSelect } from '../../components/ui/MultiSelect';
 import { Eye, EyeOff } from 'lucide-react';
 
 interface Member {
@@ -13,6 +15,7 @@ interface Member {
   role: string;
   phone: string;
   status: string;
+  assignedProjectIds?: string[];
 }
 
 const TeamList: React.FC = () => {
@@ -20,14 +23,20 @@ const TeamList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   
   const [members, setMembers] = useState<Member[]>([]);
-  
+  const [allProjects, setAllProjects] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    projectsApi.getProjects(activeBuilderId).then((data: any) => setAllProjects(data.map((p: any) => ({ id: p.id, name: p.name }))));
+  }, [activeBuilderId]);
+
   useEffect(() => {
     // Load members from mockDb instead of static state
     const allUsers = mockDb.getUsers();
-    
-    // Filter for team roles (exclude super_admin, customer, contractor)
-    const teamUsers = allUsers.filter(u => 
-      ['builder_admin', 'project_manager', 'site_engineer', 'crm', 'accounts'].includes(u.role)
+
+    // Filter for team roles within this builder only (exclude super_admin, customer, contractor)
+    const teamUsers = allUsers.filter(u =>
+      ['builder_admin', 'project_manager', 'site_engineer', 'crm', 'accounts'].includes(u.role) &&
+      u.builderId === activeBuilderId
     );
     
     const mappedMembers: Member[] = teamUsers.map(u => {
@@ -47,13 +56,17 @@ const TeamList: React.FC = () => {
         email: u.email,
         role: uiRole,
         phone: u.phone,
-        status: u.status
+        status: u.status,
+        assignedProjectIds: u.assignedProjectIds || []
       };
     });
     
     setMembers(mappedMembers);
-  }, []);
+  }, [activeBuilderId]);
+
   const [showAddMember, setShowAddMember] = useState(false);
+  const [showEditMember, setShowEditMember] = useState(false);
+  const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
   
   // Form fields
   const [firstName, setFirstName] = useState('');
@@ -61,7 +74,7 @@ const TeamList: React.FC = () => {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [role, setRole] = useState('Project Manager');
-  const [assignedProjects, setAssignedProjects] = useState('');
+  const [assignedProjectIds, setAssignedProjectIds] = useState<string[]>([]);
   const [status, setStatus] = useState('Active');
   
   const [errors, setErrors] = useState<any>({});
@@ -89,7 +102,7 @@ const TeamList: React.FC = () => {
       newErrors.email = 'This email is already associated with an account.';
     }
 
-    if (!assignedProjects.trim()) newErrors.assignedProjects = 'Required';
+    if (role !== 'Admin' && assignedProjectIds.length === 0) newErrors.assignedProjectIds = 'Select at least one project.';
     if (!password) newErrors.password = 'Required';
     if (!confirmPassword) newErrors.confirmPassword = 'Required';
     if (password && confirmPassword && password !== confirmPassword) {
@@ -107,6 +120,7 @@ const TeamList: React.FC = () => {
         case 'Project Manager': systemRole = 'project_manager'; break;
         case 'Site Engineer': systemRole = 'site_engineer'; break;
         case 'CRM': systemRole = 'crm'; break;
+        case 'Accounts': systemRole = 'accounts'; break;
         case 'Admin': systemRole = 'builder_admin'; break;
       }
 
@@ -117,7 +131,8 @@ const TeamList: React.FC = () => {
           phone,
           role: systemRole,
           password: password,
-          builderId: activeBuilderId // associate with current builder
+          builderId: activeBuilderId, // associate with current builder
+          assignedProjectIds: systemRole === 'builder_admin' ? undefined : assignedProjectIds
         });
 
         const newM: Member = {
@@ -127,7 +142,8 @@ const TeamList: React.FC = () => {
           email,
           role,
           phone,
-          status
+          status,
+          assignedProjectIds: systemRole === 'builder_admin' ? [] : assignedProjectIds
         };
 
         setMembers([...members, newM]);
@@ -145,7 +161,7 @@ const TeamList: React.FC = () => {
         setEmail('');
         setPhone('');
         setRole('Project Manager');
-        setAssignedProjects('');
+        setAssignedProjectIds([]);
         setStatus('Active');
         setPassword('');
         setConfirmPassword('');
@@ -162,6 +178,82 @@ const TeamList: React.FC = () => {
     `${m.firstName} ${m.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
     m.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const openEditModal = (m: Member) => {
+    setEditingMemberId(m.id);
+    setFirstName(m.firstName);
+    setLastName(m.lastName);
+    setEmail(m.email); // Keep it read-only mostly but populated
+    setPhone(m.phone);
+    setRole(m.role);
+    setAssignedProjectIds(m.assignedProjectIds || []);
+    setStatus(m.status);
+    setErrors({});
+    setShowEditMember(true);
+  };
+
+  const handleEditMember = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingMemberId) return;
+    
+    const newErrors: any = {};
+    if (!firstName.trim()) newErrors.firstName = 'Required';
+    if (!lastName.trim()) newErrors.lastName = 'Required';
+    if (role !== 'Admin' && assignedProjectIds.length === 0) newErrors.assignedProjectIds = 'Select at least one project.';
+    
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) return;
+
+    setIsSubmitting(true);
+    setTimeout(() => {
+      let systemRole: User['role'] = 'builder_admin';
+      switch (role) {
+        case 'Project Manager': systemRole = 'project_manager'; break;
+        case 'Site Engineer': systemRole = 'site_engineer'; break;
+        case 'CRM': systemRole = 'crm'; break;
+        case 'Accounts': systemRole = 'accounts'; break;
+        case 'Admin': systemRole = 'builder_admin'; break;
+      }
+
+      try {
+        const userToUpdate = mockDb.getUsers().find(u => u.id === editingMemberId);
+        if (userToUpdate) {
+          const updatedUser = {
+            ...userToUpdate,
+            name: `${firstName} ${lastName}`,
+            phone,
+            role: systemRole,
+            status,
+            assignedProjectIds: systemRole === 'builder_admin' ? undefined : assignedProjectIds
+          };
+          // Directly update in localStorage for simplicity in this mock
+          const db = JSON.parse(localStorage.getItem('handoverly_db_v4') || '{}');
+          const userIndex = db.users.findIndex((u: User) => u.id === editingMemberId);
+          if (userIndex !== -1) {
+            db.users[userIndex] = updatedUser;
+            localStorage.setItem('handoverly_db_v4', JSON.stringify(db));
+          }
+        }
+        
+        // Update local state
+        setMembers(members.map(m => m.id === editingMemberId ? {
+          ...m,
+          firstName,
+          lastName,
+          phone,
+          role,
+          status,
+          assignedProjectIds: systemRole === 'builder_admin' ? [] : assignedProjectIds
+        } : m));
+
+        setShowEditMember(false);
+      } catch (err) {
+        console.error("Failed to update user", err);
+      } finally {
+        setIsSubmitting(false);
+      }
+    }, 500);
+  };
 
   return (
     <div style={{ maxWidth: '1000px', margin: '0 auto', paddingBottom: '48px' }}>
@@ -239,9 +331,21 @@ const TeamList: React.FC = () => {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <span className="status-badge status-badge--success" style={{ fontWeight: 600 }}>
+              <span className={`status-badge status-badge--${m.status === 'Active' ? 'success' : 'default'}`} style={{ fontWeight: 600 }}>
                 {m.role}
               </span>
+              <span style={{ fontSize: '12px', color: m.status === 'Active' ? '#059669' : '#6B7280', fontWeight: 500 }}>
+                {m.status}
+              </span>
+              {(activeRole === 'builder_admin' || activeRole === 'super_admin') && (
+                <button 
+                  className="btn-secondary" 
+                  style={{ padding: '6px 12px', fontSize: '12px' }}
+                  onClick={() => openEditModal(m)}
+                >
+                  Edit
+                </button>
+              )}
             </div>
           </div>
         ))}
@@ -299,7 +403,8 @@ const TeamList: React.FC = () => {
                     <option value="Project Manager">Project Manager</option>
                     <option value="Site Engineer">Site Engineer</option>
                     <option value="CRM">CRM</option>
-                    <option value="Admin">Admin</option>
+                    <option value="Accounts">Accounts</option>
+                    <option value="Admin">Builder Admin</option>
                   </select>
                 </div>
                 <div>
@@ -311,10 +416,20 @@ const TeamList: React.FC = () => {
                 </div>
               </div>
 
-              <div>
-                <label className="admin-form-label">Assigned Projects *</label>
-                <input type="text" className={`admin-form-input ${errors.assignedProjects ? 'error' : ''}`} value={assignedProjects} onChange={e => setAssignedProjects(e.target.value)} placeholder="e.g. Skyline Towers" />
-              </div>
+              {role !== 'Admin' && (
+                <div>
+                  <MultiSelect
+                    label="Assigned Projects"
+                    required
+                    options={allProjects.map(p => ({ id: p.id, label: p.name }))}
+                    value={assignedProjectIds}
+                    onChange={setAssignedProjectIds}
+                    placeholder="Select projects"
+                    error={errors.assignedProjectIds}
+                    emptyMessage="No projects found for this builder."
+                  />
+                </div>
+              )}
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div>
@@ -328,9 +443,10 @@ const TeamList: React.FC = () => {
                       placeholder="e.g. SecretPassword123!" 
                       style={{ paddingRight: '40px' }}
                     />
-                    <button 
+                    <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
                       style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--admin-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                     >
                       {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -350,9 +466,10 @@ const TeamList: React.FC = () => {
                       placeholder="e.g. SecretPassword123!" 
                       style={{ paddingRight: '40px' }}
                     />
-                    <button 
+                    <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
                       style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--admin-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                     >
                       {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -383,6 +500,95 @@ const TeamList: React.FC = () => {
             setNewlyCreatedMember(null);
           }}
         />
+      )}
+
+      {/* Edit Modal */}
+      {showEditMember && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(7, 26, 51, 0.4)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '16px',
+            padding: '32px',
+            width: '100%',
+            maxWidth: '440px',
+            boxShadow: '0 10px 25px rgba(7, 26, 51, 0.15)'
+          }}>
+            <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--admin-navy)', marginBottom: '16px' }}>Edit Team Member</h3>
+            <form onSubmit={handleEditMember} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div>
+                  <label className="admin-form-label">First Name *</label>
+                  <input type="text" className={`admin-form-input ${errors.firstName ? 'error' : ''}`} value={firstName} onChange={e => setFirstName(e.target.value)} />
+                </div>
+                <div>
+                  <label className="admin-form-label">Last Name *</label>
+                  <input type="text" className={`admin-form-input ${errors.lastName ? 'error' : ''}`} value={lastName} onChange={e => setLastName(e.target.value)} />
+                </div>
+              </div>
+              
+              <div>
+                <label className="admin-form-label">Email Address (Read-only)</label>
+                <input type="email" className="admin-form-input" value={email} disabled style={{ backgroundColor: '#F3F4F6' }} />
+              </div>
+
+              <div>
+                <label className="admin-form-label">Phone Number</label>
+                <input type="tel" className="admin-form-input" value={phone} onChange={e => setPhone(e.target.value)} />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div>
+                  <label className="admin-form-label">Role *</label>
+                  <select className="admin-form-input" style={{ backgroundColor: 'white' }} value={role} onChange={e => setRole(e.target.value)}>
+                    <option value="Project Manager">Project Manager</option>
+                    <option value="Site Engineer">Site Engineer</option>
+                    <option value="CRM">CRM</option>
+                    <option value="Accounts">Accounts</option>
+                    <option value="Admin">Builder Admin</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="admin-form-label">Status *</label>
+                  <select className="admin-form-input" style={{ backgroundColor: 'white' }} value={status} onChange={e => setStatus(e.target.value)}>
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
+              </div>
+
+              {role !== 'Admin' && (
+                <div>
+                  <MultiSelect
+                    label="Assigned Projects"
+                    required
+                    options={allProjects.map(p => ({ id: p.id, label: p.name }))}
+                    value={assignedProjectIds}
+                    onChange={setAssignedProjectIds}
+                    placeholder="Select projects"
+                    error={errors.assignedProjectIds}
+                    emptyMessage="No projects found for this builder."
+                  />
+                </div>
+              )}
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
+                <button type="button" className="btn-secondary" onClick={() => setShowEditMember(false)} disabled={isSubmitting}>Cancel</button>
+                <button type="submit" className="btn-primary" disabled={isSubmitting}>{isSubmitting ? 'Saving...' : 'Save Changes'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
       <style>{`

@@ -6,7 +6,6 @@ import LoginPage from './LoginPage';
 import ForgotPassword from './ForgotPassword';
 import ResetPassword from './ResetPassword';
 import ParticleText from './ParticleText';
-import { checkHealth } from './api';
 import AdminApp from './admin/AdminApp';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -14,27 +13,6 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [fadingOut, setFadingOut] = useState(false);
   const location = useLocation();
-  const [currentPath, setCurrentPath] = useState(window.location.pathname + window.location.hash);
-
-  useEffect(() => {
-    // Health check call to backend API to verify connectivity
-    checkHealth()
-      .then(res => console.log('Backend connection verified:', res))
-      .catch(() => {}); // Suppress the expected connection error to keep console clean
-  }, []);
-
-  useEffect(() => {
-    const handleLocationChange = () => {
-      setCurrentPath(window.location.pathname + window.location.hash);
-    };
-
-    window.addEventListener('popstate', handleLocationChange);
-    window.addEventListener('hashchange', handleLocationChange);
-    return () => {
-      window.removeEventListener('popstate', handleLocationChange);
-      window.removeEventListener('hashchange', handleLocationChange);
-    };
-  }, []);
 
   useEffect(() => {
     // Wait for the particles to fully settle (1600ms + 420ms stagger)

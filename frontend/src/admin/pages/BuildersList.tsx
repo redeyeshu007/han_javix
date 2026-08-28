@@ -1,22 +1,49 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MoreHorizontal, Eye, Edit2, Play, Pause, Plus } from 'lucide-react';
+import { Eye, Edit2, Play, Pause, Plus } from 'lucide-react';
 import { PageHeader, StatusBadge } from '../components/AdminUI';
-import { buildersMock, BuilderCompany } from '../data/adminMockData';
 import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
 import { Dropdown, DropdownItem } from '../../components/ui/Dropdown';
 import { Table, TableContainer } from '../../components/ui/Table';
-import { Card, CardBody } from '../../components/ui/Card';
+import { Card } from '../../components/ui/Card';
+import { buildersApi, projectsApi } from '../../api/services';
+import { Builder } from '../../services/mockDb';
+import { PageLoading } from '../../components/LoadingState';
 
 const BuildersList: React.FC = () => {
   const navigate = useNavigate();
-  const [data, setData] = useState<BuilderCompany[]>(buildersMock);
+  const [data, setData] = useState<Builder[]>([]);
+  const [projectCounts, setProjectCounts] = useState<Record<string, number>>({});
+  const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedBuilder, setSelectedBuilder] = useState<BuilderCompany | null>(null);
+  const [selectedBuilder, setSelectedBuilder] = useState<Builder | null>(null);
   const [modalAction, setModalAction] = useState<'suspend' | 'activate' | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleAction = (builder: BuilderCompany, action: 'view' | 'edit' | 'suspend' | 'activate') => {
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [builders, projects] = await Promise.all([
+        buildersApi.getBuilders(),
+        projectsApi.getProjects()
+      ]);
+      setData(builders);
+      const counts: Record<string, number> = {};
+      projects.forEach((p: any) => { counts[p.builderId] = (counts[p.builderId] || 0) + 1; });
+      setProjectCounts(counts);
+    } catch (error) {
+      console.error('Failed to fetch builders', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const handleAction = (builder: Builder, action: 'view' | 'edit' | 'suspend' | 'activate') => {
     if (action === 'view') {
       navigate(`/admin/builders/${builder.id}`);
     } else if (action === 'edit') {
@@ -28,13 +55,23 @@ const BuildersList: React.FC = () => {
     }
   };
 
-  const confirmAction = () => {
+  const confirmAction = async () => {
     if (selectedBuilder && modalAction) {
       const newStatus = modalAction === 'suspend' ? 'Suspended' : 'Active';
-      setData(data.map(b => b.id === selectedBuilder.id ? { ...b, status: newStatus } : b));
+      setIsSubmitting(true);
+      try {
+        await buildersApi.updateBuilder(selectedBuilder.id, { status: newStatus });
+        await fetchData();
+      } catch (error) {
+        console.error('Failed to update builder status', error);
+      } finally {
+        setIsSubmitting(false);
+      }
     }
     setIsModalOpen(false);
   };
+
+  if (loading) return <PageLoading />;
 
   return (
     <div>
@@ -91,7 +128,7 @@ const BuildersList: React.FC = () => {
                   <tr key={record.id}>
                     <td><strong style={{ color: 'var(--admin-navy)' }}>{record.name}</strong></td>
                     <td>{record.contact}</td>
-                    <td>{record.projects}</td>
+                    <td>{projectCounts[record.id] || 0}</td>
                     <td>{record.plan}</td>
                     <td><StatusBadge status={record.status} /></td>
                     <td>{record.joined}</td>
@@ -119,9 +156,9 @@ const BuildersList: React.FC = () => {
         onClose={() => setIsModalOpen(false)}
         footer={
           <>
-            <Button variant="ghost" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-            <Button variant={modalAction === 'suspend' ? 'danger' : 'primary'} onClick={confirmAction}>
-              {modalAction === 'suspend' ? 'Suspend Account' : 'Activate Account'}
+            <Button variant="ghost" onClick={() => setIsModalOpen(false)} disabled={isSubmitting}>Cancel</Button>
+            <Button variant={modalAction === 'suspend' ? 'danger' : 'primary'} onClick={confirmAction} disabled={isSubmitting}>
+              {isSubmitting ? 'Saving...' : modalAction === 'suspend' ? 'Suspend Account' : 'Activate Account'}
             </Button>
           </>
         }

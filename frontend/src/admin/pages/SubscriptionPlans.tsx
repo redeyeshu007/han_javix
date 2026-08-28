@@ -1,33 +1,55 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Plus, Edit2 } from 'lucide-react';
 import { PageHeader, StatusBadge } from '../components/AdminUI';
-import { plansMock } from '../data/adminMockData';
 import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
 import { Table, TableContainer } from '../../components/ui/Table';
 import { Card } from '../../components/ui/Card';
 import { Input, Select, Textarea } from '../../components/ui/FormElements';
+import { plansApi, buildersApi } from '../../api/services';
+import { Plan, Builder } from '../../services/mockDb';
+import { PageLoading } from '../../components/LoadingState';
 
 const SubscriptionPlans: React.FC = () => {
-  const [data, setData] = useState(plansMock);
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<Plan[]>([]);
+  const [builders, setBuilders] = useState<Builder[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingPlan, setEditingPlan] = useState<any>(null);
+  const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
 
-  // Form State
   const [planName, setPlanName] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
-  const [billingCycle, setBillingCycle] = useState('Monthly');
+  const [billingCycle, setBillingCycle] = useState<'Monthly' | 'Yearly'>('Monthly');
   const [maxProjects, setMaxProjects] = useState('');
   const [maxUnits, setMaxUnits] = useState('');
   const [maxUsers, setMaxUsers] = useState('');
   const [storageLimit, setStorageLimit] = useState('');
-  const [status, setStatus] = useState('Active');
-  
+  const [status, setStatus] = useState<'Active' | 'Inactive'>('Active');
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<any>({});
 
-  const handleOpen = (plan?: any) => {
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [plans, builderList] = await Promise.all([plansApi.getPlans(), buildersApi.getBuilders()]);
+      setData(plans);
+      setBuilders(builderList);
+    } catch (error) {
+      console.error('Failed to fetch plans', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const buildersOnPlan = (planName: string) => builders.filter(b => b.plan === planName).length;
+
+  const handleOpen = (plan?: Plan) => {
     if (plan) {
       setEditingPlan(plan);
       setPlanName(plan.name || '');
@@ -55,7 +77,7 @@ const SubscriptionPlans: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const newErrors: any = {};
     if (!planName.trim()) newErrors.planName = 'Required';
     if (!billingCycle) newErrors.billingCycle = 'Required';
@@ -65,35 +87,28 @@ const SubscriptionPlans: React.FC = () => {
     if (Object.keys(newErrors).length > 0) return;
 
     setIsSubmitting(true);
-    setTimeout(() => {
-      const newPlan = {
-        id: editingPlan ? editingPlan.id : Date.now().toString(),
-        name: planName,
-        description,
-        price,
-        billingCycle,
-        maxProjects,
-        maxUnits,
-        maxUsers,
-        storageLimit,
-        status,
-        builders: editingPlan ? editingPlan.builders : 0,
-      };
-
+    try {
+      const payload = { name: planName, description, price, billingCycle, maxProjects, maxUnits, maxUsers, storageLimit, status };
       if (editingPlan) {
-        setData(data.map(p => p.id === newPlan.id ? newPlan : p));
+        await plansApi.updatePlan(editingPlan.id, payload);
       } else {
-        setData([...data, newPlan]);
+        await plansApi.createPlan(payload);
       }
-      setIsSubmitting(false);
+      await fetchData();
       setIsModalOpen(false);
-    }, 500);
+    } catch (error) {
+      console.error('Failed to save plan', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  if (loading) return <PageLoading />;
 
   return (
     <div>
-      <PageHeader 
-        title="Subscription Plans" 
+      <PageHeader
+        title="Subscription Plans"
         subtitle="Manage billing tiers and limits."
         action={
           <Button variant="primary" onClick={() => handleOpen()} leftIcon={<Plus size={18} />}>
@@ -101,7 +116,7 @@ const SubscriptionPlans: React.FC = () => {
           </Button>
         }
       />
-      
+
       <Card>
         <TableContainer>
           <Table>
@@ -119,10 +134,10 @@ const SubscriptionPlans: React.FC = () => {
                 <tr key={record.id}>
                   <td><strong style={{ color: 'var(--admin-navy)' }}>{record.name}</strong></td>
                   <td>{record.description}</td>
-                  <td>{record.builders}</td>
-                  <td><StatusBadge status={record.status} /></td>
+                  <td>{buildersOnPlan(record.name)}</td>
+                  <td><StatusBadge status={record.status === 'Active' ? 'Active' : 'Suspended'} /></td>
                   <td style={{ textAlign: 'center' }}>
-                    <Button variant="secondary" size="sm" style={{ padding: '6px' }} onClick={() => handleOpen(record)}>
+                    <Button variant="secondary" size="sm" style={{ padding: '6px' }} onClick={() => handleOpen(record)} aria-label="Edit plan">
                       <Edit2 size={16} />
                     </Button>
                   </td>
@@ -147,8 +162,8 @@ const SubscriptionPlans: React.FC = () => {
         footer={
           <>
             <Button variant="ghost" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-            <Button 
-              variant="primary" 
+            <Button
+              variant="primary"
               onClick={handleSave}
               isLoading={isSubmitting}
             >
@@ -160,34 +175,34 @@ const SubscriptionPlans: React.FC = () => {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', paddingTop: '16px' }}>
           <Input label="Plan Name" required error={errors.planName} value={planName} onChange={e => setPlanName(e.target.value)} />
           <Input type="number" label="Price" value={price} onChange={e => setPrice(e.target.value)} placeholder="0.00" />
-          
+
           <div style={{ gridColumn: '1 / -1' }}>
             <Textarea label="Description" value={description} onChange={e => setDescription(e.target.value)} rows={2} />
           </div>
-          
-          <Select 
-            label="Billing Cycle" 
-            required 
+
+          <Select
+            label="Billing Cycle"
+            required
             error={errors.billingCycle}
-            value={billingCycle} 
-            onChange={e => setBillingCycle(e.target.value)}
+            value={billingCycle}
+            onChange={e => setBillingCycle(e.target.value as 'Monthly' | 'Yearly')}
             options={[
               { value: 'Monthly', label: 'Monthly' },
               { value: 'Yearly', label: 'Yearly' }
             ]}
           />
-          <Select 
-            label="Status" 
-            required 
+          <Select
+            label="Status"
+            required
             error={errors.status}
-            value={status} 
-            onChange={e => setStatus(e.target.value)}
+            value={status}
+            onChange={e => setStatus(e.target.value as 'Active' | 'Inactive')}
             options={[
               { value: 'Active', label: 'Active' },
               { value: 'Inactive', label: 'Inactive' }
             ]}
           />
-          
+
           <Input type="number" label="Maximum Projects" value={maxProjects} onChange={e => setMaxProjects(e.target.value)} />
           <Input type="number" label="Maximum Units" value={maxUnits} onChange={e => setMaxUnits(e.target.value)} />
           <Input type="number" label="Maximum Users" value={maxUsers} onChange={e => setMaxUsers(e.target.value)} />

@@ -98,7 +98,7 @@ const InspectionsList: React.FC = () => {
                     Inspect
                   </Link>
 
-                  <Link to={`/admin/units/${u.id}`} style={{ display: 'flex', alignItems: 'center' }}>
+                  <Link to={`/admin/units/${u.id}`} aria-label={`View unit ${u.name}`} style={{ display: 'flex', alignItems: 'center' }}>
                     <ChevronRight size={20} color="var(--admin-text-secondary)" />
                   </Link>
                 </div>

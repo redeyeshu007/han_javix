@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { Plus, Search, ChevronRight, Briefcase } from 'lucide-react';
 import { mockDb, Project } from '../../services/mockDb';
 import { useRole } from '../../context/RoleContext';
+import { useAuth } from '../../context/AuthContext';
+import { canAccessProject } from '../../utils/access';
 import { PageHeader } from '../components/AdminUI';
 import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
@@ -11,6 +13,7 @@ import { Card } from '../../components/ui/Card';
 
 const ProjectsList: React.FC = () => {
   const { activeBuilderId } = useRole();
+  const { user } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -25,12 +28,13 @@ const ProjectsList: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const loadProjects = () => {
-    setProjects(mockDb.getProjects(activeBuilderId));
+    const list = mockDb.getProjects(activeBuilderId);
+    setProjects(list.filter(p => canAccessProject(user, p.id, p.builderId)));
   };
 
   useEffect(() => {
     loadProjects();
-  }, [activeBuilderId]);
+  }, [activeBuilderId, user]);
 
   const handleCreateProject = () => {
     const newErrors: any = {};

@@ -31,7 +31,7 @@ const LoginPage: React.FC = () => {
           case 'project_manager': dashboardRoute = '/admin/projects'; break;
           case 'site_engineer': dashboardRoute = '/admin/inspections'; break;
           case 'crm': dashboardRoute = '/admin/customers'; break;
-          case 'accounts': dashboardRoute = '/admin/accounts'; break;
+          case 'accounts': dashboardRoute = '/admin/accounts-dashboard'; break;
           case 'contractor': dashboardRoute = '/admin/contractor-tasks'; break;
           case 'customer': dashboardRoute = '/admin/customer-dashboard'; break;
           default: dashboardRoute = '/admin/dashboard';

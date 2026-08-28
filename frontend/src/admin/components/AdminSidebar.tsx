@@ -1,13 +1,13 @@
 import React from 'react';
 import { NavLink, Link } from 'react-router-dom';
-import { 
-  Building2, 
-  CreditCard, 
-  Users, 
-  CheckSquare, 
-  FileText, 
-  LayoutTemplate, 
-  MessageSquare, 
+import {
+  Building2,
+  CreditCard,
+  Users,
+  CheckSquare,
+  FileText,
+  LayoutTemplate,
+  MessageSquare,
   Settings,
   Home,
   Briefcase,
@@ -15,7 +15,9 @@ import {
   Key,
   HeartHandshake,
   Share2,
-  FileBarChart
+  FileBarChart,
+  User,
+  Bell
 } from 'lucide-react';
 import { useRole } from '../../context/RoleContext';
 import '../admin.css';
@@ -51,17 +53,22 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
   // 2. Builder Roles Nav (except contractor)
   const builderSections = [
     {
-      title: 'Operations',
+      title: 'Project Management',
       items: [
         { name: 'Projects', icon: Briefcase, path: '/admin/projects' },
         { name: 'Customers', icon: UserCheck, path: '/admin/customers' },
         { name: 'Contractors', icon: Users, path: '/admin/contractors' },
+      ]
+    },
+    {
+      title: 'Quality',
+      items: [
         { name: 'Inspections', icon: CheckSquare, path: '/admin/inspections' },
         { name: 'Defects', icon: FileText, path: '/admin/defects' },
       ]
     },
     {
-      title: 'Handover & Beyond',
+      title: 'Handover',
       items: [
         { name: 'Handover Workspace', icon: Key, path: '/admin/handover' },
         { name: 'Care / Warranty', icon: HeartHandshake, path: '/admin/care' },
@@ -69,7 +76,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
       ]
     },
     {
-      title: 'Analytics & Management',
+      title: 'Management',
       items: [
         { name: 'Team', icon: Users, path: '/admin/team' },
         { name: 'Reports', icon: FileBarChart, path: '/admin/reports' },
@@ -105,17 +112,44 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
         { name: 'My Inspection', icon: CheckSquare, path: '/admin/customer-inspection' },
         { name: 'My Issues', icon: MessageSquare, path: '/admin/customer-issues' },
       ]
+    },
+    {
+      title: 'Handover & Beyond',
+      items: [
+        { name: 'Handover', icon: Key, path: '/admin/customer-handover' },
+        { name: 'Care / Warranty', icon: HeartHandshake, path: '/admin/customer-care' },
+      ]
+    },
+    {
+      title: 'Account',
+      items: [
+        { name: 'Profile', icon: User, path: '/admin/customer-profile' },
+        { name: 'Notifications', icon: Bell, path: '/admin/customer-notifications' },
+      ]
+    }
+  ];
+
+  // 5. Accounts Nav
+  const accountsSections = [
+    {
+      title: 'Operations',
+      items: [
+        { name: 'Projects', icon: Briefcase, path: '/admin/projects' },
+        { name: 'Customers', icon: UserCheck, path: '/admin/customers' },
+      ]
     }
   ];
 
   // Determine current links to render
-  const renderDashboardPath = activeRole === 'super_admin' ? '/admin/dashboard' : activeRole === 'customer' ? '/admin/customer-dashboard' : '/admin/builder-dashboard';
+  const renderDashboardPath = activeRole === 'super_admin' ? '/admin/dashboard' : activeRole === 'customer' ? '/admin/customer-dashboard' : activeRole === 'accounts' ? '/admin/accounts-dashboard' : '/admin/builder-dashboard';
   
   let currentSections = superAdminSections;
   if (activeRole === 'contractor') {
     currentSections = contractorSections;
   } else if (activeRole === 'customer') {
     currentSections = customerSections;
+  } else if (activeRole === 'accounts') {
+    currentSections = accountsSections;
   } else if (activeRole !== 'super_admin') {
     currentSections = builderSections;
   }
@@ -130,20 +164,23 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
         </div>
         
         <div className="admin-sidebar__content">
-          <nav className="admin-sidebar__nav" style={{ marginBottom: '24px' }}>
-            {activeRole !== 'contractor' && (
-              <NavLink 
-                to={renderDashboardPath}
-                className={({ isActive }) => `admin-sidebar__link ${isActive ? 'active' : ''}`}
-                onClick={() => {
-                  if (window.innerWidth <= 1024) onClose();
-                }}
-              >
-                <Home size={18} />
-                Home
-              </NavLink>
-            )}
-          </nav>
+          {activeRole !== 'contractor' && (
+            <div style={{ marginBottom: '20px' }}>
+              <div className="admin-sidebar__group-title" style={{ margin: '0 0 8px 12px' }}>Overview</div>
+              <nav className="admin-sidebar__nav">
+                <NavLink
+                  to={renderDashboardPath}
+                  className={({ isActive }) => `admin-sidebar__link ${isActive ? 'active' : ''}`}
+                  onClick={() => {
+                    if (window.innerWidth <= 1024) onClose();
+                  }}
+                >
+                  <Home size={18} />
+                  Dashboard
+                </NavLink>
+              </nav>
+            </div>
+          )}
 
           {currentSections.map((section, index) => (
             <div key={index} style={{ marginBottom: '20px' }}>

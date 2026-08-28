@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Share2, Check, ArrowRight } from 'lucide-react';
+import { Check, ArrowRight } from 'lucide-react';
 import { mockDb, AssociationTransition } from '../../services/mockDb';
 import { useRole } from '../../context/RoleContext';
 
@@ -113,7 +113,8 @@ const AssociationTransitionPage: React.FC = () => {
               { field: 'assets' as const, label: 'Asset Register Registry', desc: 'Log of building machinery, elevators, generator units.' },
               { field: 'contracts' as const, label: 'Vendor Service Contracts', desc: 'Transfer security, janitorial, elevator maintenance agreements.' },
               { field: 'financials' as const, label: 'Financial Documents Ledger', desc: 'Audited statements, capital reserve accounting files.' },
-              { field: 'legals' as const, label: 'Legal deeds & compliance certifications', desc: 'Occupancy permits, structural certifications, fire safety logs.' }
+              { field: 'legals' as const, label: 'Legal deeds & compliance certifications', desc: 'Occupancy permits, structural certifications, fire safety logs.' },
+              { field: 'commitments' as const, label: 'Builder Commitments', desc: 'Outstanding warranty obligations and post-handover commitments.' }
             ].map(item => {
               const status = transition[item.field];
               return (
@@ -138,7 +139,7 @@ const AssociationTransitionPage: React.FC = () => {
                       {status}
                     </span>
                     <button className="btn-secondary" style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => handleItemToggle(item.field)}>
-                      Update
+                      {status === 'Pending' ? 'Mark In Progress' : status === 'In Progress' ? 'Mark Completed' : 'Reset to Pending'}
                     </button>
                   </div>
                 </div>

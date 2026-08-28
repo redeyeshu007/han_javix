@@ -9,7 +9,7 @@ interface AdminTopbarProps {
 }
 
 const AdminTopbar: React.FC<AdminTopbarProps> = ({ onMenuClick }) => {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const { activeRole } = useRole();
   const navigate = useNavigate();
   const location = useLocation();
@@ -51,6 +51,12 @@ const AdminTopbar: React.FC<AdminTopbarProps> = ({ onMenuClick }) => {
 
   const meta = roleMetadata[activeRole] || { label: 'User', sub: 'Member', avatar: 'US' };
 
+  if (user && user.name) {
+    meta.label = user.name;
+    const parts = user.name.split(' ');
+    meta.avatar = parts.length > 1 ? `${parts[0][0]}${parts[1][0]}`.toUpperCase() : parts[0].substring(0, 2).toUpperCase();
+  }
+
   // Page title mapping based on route path
   const getPageTitle = () => {
     const path = location.pathname.toLowerCase();
@@ -61,6 +67,7 @@ const AdminTopbar: React.FC<AdminTopbarProps> = ({ onMenuClick }) => {
     if (path.includes('projects/')) return 'Project Details';
     if (path.includes('projects')) return 'Projects';
     if (path.includes('plans')) return 'Subscription Plans';
+    if (path.includes('accounts-dashboard')) return 'Accounts Dashboard';
     if (path.includes('accounts')) return 'Accounts';
     if (path.includes('checklists')) return 'Checklist Library';
     if (path.includes('documents')) return 'Document Categories';
@@ -104,8 +111,11 @@ const AdminTopbar: React.FC<AdminTopbarProps> = ({ onMenuClick }) => {
         
         {/* Notifications */}
         <div style={{ position: 'relative' }} ref={notificationRef}>
-          <button 
+          <button
             className="topbar-btn topbar-btn--notification"
+            aria-label="Notifications"
+            aria-haspopup="true"
+            aria-expanded={showNotificationDropdown}
             onClick={() => {
               setShowNotificationDropdown(!showNotificationDropdown);
               setShowProfileDropdown(false);

@@ -90,9 +90,10 @@ export const CredentialSuccessCard: React.FC<CredentialSuccessCardProps> = ({ na
                   <span style={{ fontSize: '14px', color: 'var(--admin-navy)', fontFamily: 'monospace', minWidth: '120px' }}>
                     {showPassword ? password : '••••••••••••••'}
                   </span>
-                  <button 
+                  <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
                     style={{ background: 'none', border: 'none', color: 'var(--admin-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 0 }}
                   >
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}

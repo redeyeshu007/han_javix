@@ -4,6 +4,7 @@ import { useRole } from '../../context/RoleContext';
 import { contractorsApi, projectsApi } from '../../api/services';
 import { CredentialSuccessCard } from '../../components/CredentialSuccessCard';
 import { PageLoading, ButtonLoading } from '../../components/LoadingState';
+import { MultiSelect } from '../../components/ui/MultiSelect';
 
 interface Contractor {
   id: string;
@@ -15,7 +16,7 @@ interface Contractor {
   phone: string;
   trade: string;
   status: string;
-  assignedProjects: string[];
+  assignedProjectIds: string[];
   address?: string;
   notes?: string;
 }
@@ -37,7 +38,7 @@ const ContractorsList: React.FC = () => {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [trade, setTrade] = useState('Plumbing');
-  const [assignedProjects, setAssignedProjects] = useState('');
+  const [assignedProjectIds, setAssignedProjectIds] = useState<string[]>([]);
   const [status, setStatus] = useState('Active');
   const [address, setAddress] = useState('');
   const [notes, setNotes] = useState('');
@@ -62,7 +63,7 @@ const ContractorsList: React.FC = () => {
         contractorsApi.getContractors(),
         projectsApi.getProjects(activeBuilderId)
       ]);
-      setContractors(contractorsData);
+      setContractors(contractorsData.filter((c: Contractor) => c.builderId === activeBuilderId));
       setAllProjects(projectsData.map((p: any) => ({ id: p.id, name: p.name })));
     } catch (error) {
       console.error('Failed to fetch data', error);
@@ -97,7 +98,7 @@ const ContractorsList: React.FC = () => {
     }
 
     if (!trade.trim()) newErrors.trade = 'Required';
-    if (!assignedProjects.trim()) newErrors.assignedProjects = 'Required';
+    if (assignedProjectIds.length === 0) newErrors.assignedProjectIds = 'Select at least one project.';
     
     if (!password) {
       newErrors.password = 'Required';
@@ -116,8 +117,6 @@ const ContractorsList: React.FC = () => {
     setIsSubmitting(true);
     
     try {
-      const projectIds = assignedProjects.split(',').map(s => s.trim()).filter(Boolean);
-
       await contractorsApi.createContractorWithAccount({
         builderId: activeBuilderId,
         companyName,
@@ -127,7 +126,7 @@ const ContractorsList: React.FC = () => {
         phone,
         trade,
         status,
-        assignedProjects: projectIds,
+        assignedProjectIds,
         address,
         notes,
         password
@@ -149,7 +148,7 @@ const ContractorsList: React.FC = () => {
       setEmail('');
       setPhone('');
       setTrade('Plumbing');
-      setAssignedProjects('');
+      setAssignedProjectIds([]);
       setStatus('Active');
       setAddress('');
       setNotes('');
@@ -242,7 +241,7 @@ const ContractorsList: React.FC = () => {
                   fontWeight: 700,
                   fontSize: '18px'
                 }}>
-                  {c.companyName[0]}
+                  {(c.companyName || 'C')[0]}
                 </div>
                 <div>
                   <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--admin-navy)', margin: '0 0 4px 0' }}>{c.companyName}</h3>
@@ -252,7 +251,9 @@ const ContractorsList: React.FC = () => {
                     <span>Phone: <strong>{c.phone}</strong></span>
                   </div>
                   <div style={{ fontSize: '12px', color: '#64748B', marginTop: '6px' }}>
-                    Assigned Projects: {c.assignedProjects && c.assignedProjects.length > 0 ? c.assignedProjects.join(', ') : 'None'}
+                    Assigned Projects: {c.assignedProjectIds && c.assignedProjectIds.length > 0
+                      ? c.assignedProjectIds.map(pid => allProjects.find(p => p.id === pid)?.name || pid).join(', ')
+                      : 'None'}
                   </div>
                 </div>
               </div>
@@ -354,12 +355,16 @@ const ContractorsList: React.FC = () => {
               </div>
 
               <div>
-                <label className="admin-form-label">Assigned Project(s) *</label>
-                <input type="text" className={`admin-form-input ${errors.assignedProjects ? 'error' : ''}`} value={assignedProjects} onChange={e => setAssignedProjects(e.target.value)} placeholder="Comma separated IDs (e.g. TEST-PRJ-001)" />
-                <div style={{ fontSize: '11px', color: '#64748B', marginTop: '4px' }}>
-                  Available projects: {allProjects.map(p => p.id).join(', ')}
-                </div>
-                {errors.assignedProjects && <div className="admin-form-error">{errors.assignedProjects}</div>}
+                <MultiSelect
+                  label="Assigned Projects"
+                  required
+                  options={allProjects.map(p => ({ id: p.id, label: p.name }))}
+                  value={assignedProjectIds}
+                  onChange={setAssignedProjectIds}
+                  placeholder="Select projects"
+                  error={errors.assignedProjectIds}
+                  emptyMessage="No projects found for this builder."
+                />
               </div>
               
               <div>
@@ -386,9 +391,10 @@ const ContractorsList: React.FC = () => {
                         placeholder="e.g. Contractor@1234" 
                         style={{ paddingRight: '40px' }}
                       />
-                      <button 
+                      <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
                         style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--admin-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                       >
                         {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -408,9 +414,10 @@ const ContractorsList: React.FC = () => {
                         placeholder="Confirm password" 
                         style={{ paddingRight: '40px' }}
                       />
-                      <button 
+                      <button
                         type="button"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
                         style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--admin-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                       >
                         {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}

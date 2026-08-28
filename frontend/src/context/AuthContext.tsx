@@ -1,6 +1,4 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { apiClient, setAccessToken } from '../api';
-
 import { User, mockDb } from '../services/mockDb';
 
 interface AuthContextType {
@@ -8,6 +6,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<User>;
   logout: () => Promise<void>;
+  refreshUser: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -56,8 +55,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setUser(null);
   };
 
+  const refreshUser = () => {
+    const mockSessionId = localStorage.getItem('mock_session_id');
+    if (mockSessionId) {
+      const foundUser = mockDb.findUserById(mockSessionId);
+      if (foundUser) setUser(foundUser);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

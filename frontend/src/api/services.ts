@@ -1,5 +1,11 @@
-import { mockDb, Builder, Project, Block, Floor, Unit, Customer, Defect, ServiceRequest, SupportTicket, AssociationTransition, AuditLog, Notification, Payment, Inspection } from '../services/mockDb';
+import { mockDb, Builder, Project, Block, Floor, Unit, Customer, Defect, ServiceRequest, SupportTicket, AssociationTransition, AuditLog, Notification, Payment, Inspection, User, ChecklistTemplate, Plan, CommTemplate } from '../services/mockDb';
 import { mockApiCall } from './client';
+
+export const usersApi = {
+  getUsers: () => mockApiCall(() => mockDb.getUsers()),
+  createUser: (data: Omit<User, 'id' | 'status'>) => mockApiCall(() => mockDb.createUser(data)),
+  updateUser: (id: string, data: Partial<User>) => mockApiCall(() => mockDb.updateUser(id, data)),
+};
 
 export const buildersApi = {
   getBuilders: () => mockApiCall(() => mockDb.getBuilders()),
@@ -19,7 +25,7 @@ export const unitsApi = {
   getFloors: (blockId?: string) => mockApiCall(() => mockDb.getFloors(blockId)),
   createFloor: (data: Omit<Floor, 'id'>) => mockApiCall(() => mockDb.createFloor(data)),
   getUnits: (projectId?: string) => mockApiCall(() => mockDb.getUnits(projectId)),
-  createUnit: (data: Omit<Unit, 'id' | 'status' | 'customerId' | 'inspectionStatus' | 'docsCleared' | 'paymentCleared' | 'defectsCleared' | 'keysHandedOver' | 'approvalsCleared'>) => mockApiCall(() => mockDb.createUnit(data)),
+  createUnit: (data: Omit<Unit, 'id' | 'customerId' | 'inspectionStatus' | 'docsCleared' | 'paymentCleared' | 'defectsCleared' | 'keysHandedOver' | 'approvalsCleared'> & { status?: 'Under Construction' | 'Ready for Inspection' }) => mockApiCall(() => mockDb.createUnit(data)),
   updateUnit: (id: string, data: Partial<Unit>) => mockApiCall(() => mockDb.updateUnit(id, data)),
 };
 
@@ -66,13 +72,19 @@ export const dashboardApi = {
 export const defectsApi = {
   getDefects: (projectId?: string) => mockApiCall(() => mockDb.getDefects(projectId)),
   createDefect: (data: Omit<Defect, 'id' | 'status' | 'timeline'>) => mockApiCall(() => mockDb.createDefect(data)),
-  updateDefect: (id: string, status: Defect['status'], note: string, resolutionEvidence?: string) => mockApiCall(() => mockDb.updateDefect(id, status, note, resolutionEvidence)),
+  updateDefect: (id: string, status: Defect['status'], note: string, resolutionEvidence?: string, contractorId?: string) => mockApiCall(() => mockDb.updateDefect(id, status, note, resolutionEvidence, contractorId)),
 };
 
 export const contractorsApi = {
-  getContractors: () => mockApiCall(() => mockDb.getContractors()),
+  getContractors: (assignedProjectIds?: string[]) => mockApiCall(() => {
+    const list = mockDb.getContractors();
+    return assignedProjectIds ? list.filter(c => c.assignedProjectIds.some(id => assignedProjectIds.includes(id))) : list;
+  }),
   updateContractor: (id: string, data: Partial<any>) => mockApiCall(() => mockDb.updateContractor(id, data)),
   createContractorWithAccount: (data: any & { password?: string }) => mockApiCall(() => {
+    if (mockDb.findUserByEmail(data.email)) {
+      throw new Error(`User with email ${data.email} already exists`);
+    }
     const contractor = mockDb.createContractor({
       builderId: data.builderId,
       companyName: data.companyName,
@@ -82,7 +94,7 @@ export const contractorsApi = {
       phone: data.phone,
       trade: data.trade,
       status: data.status,
-      assignedProjects: data.assignedProjects,
+      assignedProjectIds: data.assignedProjectIds,
       address: data.address,
       notes: data.notes
     });
@@ -92,7 +104,8 @@ export const contractorsApi = {
       phone: data.phone,
       role: 'contractor',
       password: data.password || 'Contractor@1234',
-      builderId: data.builderId
+      builderId: data.builderId,
+      assignedProjectIds: data.assignedProjectIds
     });
     return contractor;
   })
@@ -100,6 +113,20 @@ export const contractorsApi = {
 
 export const checklistsApi = {
   getChecklists: () => mockApiCall(() => mockDb.getChecklists()),
+  createChecklist: (data: Omit<ChecklistTemplate, 'id' | 'updated'>) => mockApiCall(() => mockDb.createChecklist(data)),
+  updateChecklist: (id: string, data: Partial<ChecklistTemplate>) => mockApiCall(() => mockDb.updateChecklist(id, data)),
+};
+
+export const plansApi = {
+  getPlans: () => mockApiCall(() => mockDb.getPlans()),
+  createPlan: (data: Omit<Plan, 'id'>) => mockApiCall(() => mockDb.createPlan(data)),
+  updatePlan: (id: string, data: Partial<Plan>) => mockApiCall(() => mockDb.updatePlan(id, data)),
+};
+
+export const templatesApi = {
+  getTemplates: () => mockApiCall(() => mockDb.getTemplates()),
+  createTemplate: (data: Omit<CommTemplate, 'id' | 'updated'>) => mockApiCall(() => mockDb.createTemplate(data)),
+  updateTemplate: (id: string, data: Partial<CommTemplate>) => mockApiCall(() => mockDb.updateTemplate(id, data)),
 };
 
 export const supportApi = {
@@ -159,5 +186,5 @@ export const notificationService = {
 export const paymentService = {
   getPayments: (unitId?: string) => mockApiCall(() => mockDb.getPayments(unitId)),
   createPayment: (data: Omit<Payment, 'id'>) => mockApiCall(() => mockDb.createPayment(data)),
-  updatePaymentStatus: (id: string, status: Payment['status']) => mockApiCall(() => mockDb.updatePaymentStatus(id, status)),
+  updatePaymentStatus: (id: string, status: Payment['status'], verifiedBy?: string) => mockApiCall(() => mockDb.updatePaymentStatus(id, status, verifiedBy)),
 };

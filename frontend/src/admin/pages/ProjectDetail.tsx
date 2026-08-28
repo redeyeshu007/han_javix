@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Plus, Briefcase, ChevronRight, FolderPlus } from 'lucide-react';
+import { Plus, FolderPlus } from 'lucide-react';
 import { mockDb, Project, Block, Floor, Unit } from '../../services/mockDb';
 
 const ProjectDetail: React.FC = () => {
@@ -50,7 +50,6 @@ const ProjectDetail: React.FC = () => {
       setBlocks(blks);
       
       const flrs: Floor[] = [];
-      const unts: Unit[] = [];
       blks.forEach(blk => {
         flrs.push(...mockDb.getFloors(blk.id));
       });
@@ -157,7 +156,13 @@ const ProjectDetail: React.FC = () => {
         projectId: id!,
         blockId: unitBlockId,
         floorId: unitFloorId,
-        name: newUnitName
+        name: newUnitName,
+        type: newUnitType,
+        areaSqFt: Number(newUnitArea) || undefined,
+        bedrooms: Number(newUnitBedrooms) || undefined,
+        bathrooms: Number(newUnitBathrooms) || undefined,
+        parking: newUnitParking,
+        status: newUnitStatus as 'Under Construction' | 'Ready for Inspection'
       });
       setNewUnitName('');
       setNewUnitArea('');
@@ -165,6 +170,7 @@ const ProjectDetail: React.FC = () => {
       setNewUnitBedrooms('1');
       setNewUnitBathrooms('1');
       setNewUnitParking('1');
+      setNewUnitStatus('Under Construction');
       setShowUnitModal(false);
       setIsSubmitting(false);
       loadAllData();
@@ -414,7 +420,7 @@ const ProjectDetail: React.FC = () => {
       {showUnitModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(7, 26, 51, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '32px', width: '100%', maxWidth: '560px', boxShadow: '0 10px 25px rgba(7, 26, 51, 0.15)' }}>
-            <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--admin-navy)', marginBottom: '16px' }}>Add New Property Unit</h3>
+            <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--admin-navy)', marginBottom: '16px' }}>Add Unit</h3>
             <form onSubmit={handleCreateUnit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div>
@@ -491,7 +497,7 @@ const ProjectDetail: React.FC = () => {
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
                 <button type="button" className="btn-secondary" onClick={() => setShowUnitModal(false)} disabled={isSubmitting}>Cancel</button>
-                <button type="submit" className="btn-primary" disabled={isSubmitting}>{isSubmitting ? 'Creating...' : 'Create Unit'}</button>
+                <button type="submit" className="btn-primary" disabled={isSubmitting}>{isSubmitting ? 'Adding...' : 'Add Unit'}</button>
               </div>
             </form>
           </div>

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Wrench, Search, Plus, Check } from 'lucide-react';
+import { Wrench, Check } from 'lucide-react';
 import { mockDb, ServiceRequest, Unit, Customer } from '../../services/mockDb';
 
 const CareWorkspace: React.FC = () => {

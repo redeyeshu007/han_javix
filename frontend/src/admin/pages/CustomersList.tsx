@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, User, ChevronRight } from 'lucide-react';
+import { Search, User } from 'lucide-react';
 import { mockDb, Customer, Unit } from '../../services/mockDb';
+import { useRole } from '../../context/RoleContext';
 
 const CustomersList: React.FC = () => {
+  const { activeBuilderId } = useRole();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    setCustomers(mockDb.getCustomers());
+    setCustomers(mockDb.getCustomers(activeBuilderId));
     setUnits(mockDb.getUnits());
-  }, []);
+  }, [activeBuilderId]);
 
   const filtered = customers.filter(c => 
     c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 

@@ -28,7 +28,7 @@ export const Dropdown: React.FC<{ items: DropdownItem[]; children?: React.ReactN
     <div className="relative inline-block text-left" ref={ref} style={{ position: 'relative' }}>
       <div onClick={() => setIsOpen(!isOpen)} style={{ cursor: 'pointer' }}>
         {children || (
-          <button className="btn-ghost" style={{ padding: '6px' }}>
+          <button className="btn-ghost" style={{ padding: '6px' }} aria-label="More actions" aria-haspopup="true" aria-expanded={isOpen}>
             <MoreHorizontal size={20} />
           </button>
         )}

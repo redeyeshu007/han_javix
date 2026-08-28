@@ -1,64 +1,120 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { MessageSquare, Plus } from 'lucide-react';
 import { PageHeader, StatusBadge, StatCard } from '../components/AdminUI';
-import { supportMock } from '../data/adminMockData';
 import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
 import { Table, TableContainer } from '../../components/ui/Table';
 import { Card } from '../../components/ui/Card';
 import { Input, Select, Textarea } from '../../components/ui/FormElements';
+import { supportApi, buildersApi } from '../../api/services';
+import { SupportTicket, Builder } from '../../services/mockDb';
+import { PageLoading } from '../../components/LoadingState';
+import { useAuth } from '../../context/AuthContext';
 
 const Support: React.FC = () => {
-  const [data, setData] = useState(supportMock);
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<SupportTicket[]>([]);
+  const [builders, setBuilders] = useState<Builder[]>([]);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [selectedTicket, setSelectedTicket] = useState<any>(null);
+  const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
+  const [replyText, setReplyText] = useState('');
 
-  // Create Form State
   const [subject, setSubject] = useState('');
-  const [category, setCategory] = useState('Technical Issue');
-  const [priority, setPriority] = useState('Medium');
+  const [priority, setPriority] = useState<'Low' | 'Medium' | 'High'>('Medium');
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<any>({});
 
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [tickets, builderList] = await Promise.all([supportApi.getTickets(), buildersApi.getBuilders()]);
+      setData(tickets);
+      setBuilders(builderList);
+    } catch (error) {
+      console.error('Failed to fetch support tickets', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const builderName = (builderId: string) => builders.find(b => b.id === builderId)?.name || 'Handoverly Platform';
+
   const handleOpenCreate = () => {
     setSubject('');
-    setCategory('Technical Issue');
     setPriority('Medium');
     setDescription('');
     setErrors({});
     setIsCreateModalOpen(true);
   };
 
-  const handleCreateSubmit = () => {
+  const handleCreateSubmit = async () => {
     const newErrors: any = {};
     if (!subject.trim()) newErrors.subject = 'Required';
     if (!description.trim()) newErrors.description = 'Required';
-    
+
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) return;
 
     setIsSubmitting(true);
-    setTimeout(() => {
-      setData([{
-        id: Date.now().toString(),
-        ticket: `TIC-${Math.floor(1000 + Math.random() * 9000)}`,
-        builder: 'Current User Company',
+    try {
+      const ticket = await supportApi.createTicket({
+        builderId: user?.builderId || '',
+        requester: user?.name || 'Platform Admin',
         subject,
-        priority,
-        status: 'Open',
-        updated: 'Just now'
-      }, ...data]);
-      setIsSubmitting(false);
+        priority
+      });
+      await supportApi.addMessage(ticket.id, 'builder', description);
+      await fetchData();
       setIsCreateModalOpen(false);
-    }, 600);
+    } catch (error) {
+      console.error('Failed to create ticket', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  const handleSendReply = async () => {
+    if (!selectedTicket || !replyText.trim()) return;
+    try {
+      await supportApi.addMessage(selectedTicket.id, 'admin', replyText);
+      const updated = await supportApi.getTickets();
+      setData(updated);
+      setSelectedTicket(updated.find(t => t.id === selectedTicket.id) || null);
+      setReplyText('');
+    } catch (error) {
+      console.error('Failed to send reply', error);
+    }
+  };
+
+  const handleStatusChange = async (status: SupportTicket['status']) => {
+    if (!selectedTicket) return;
+    try {
+      await supportApi.updateStatus(selectedTicket.id, status);
+      const updated = await supportApi.getTickets();
+      setData(updated);
+      setSelectedTicket(updated.find(t => t.id === selectedTicket.id) || null);
+    } catch (error) {
+      console.error('Failed to update ticket status', error);
+    }
+  };
+
+  const openCount = data.filter(t => t.status === 'Open').length;
+  const pendingCount = data.filter(t => t.status === 'Pending').length;
+  const resolvedTodayCount = data.filter(t => t.status === 'Resolved' && t.lastUpdate === new Date().toISOString().split('T')[0]).length;
+
+  if (loading) return <PageLoading />;
 
   return (
     <div>
-      <PageHeader 
-        title="Customer Support" 
+      <PageHeader
+        title="Customer Support"
         subtitle="Manage and respond to platform support tickets."
         action={
           <Button variant="primary" onClick={handleOpenCreate} leftIcon={<Plus size={18} />}>
@@ -68,32 +124,18 @@ const Support: React.FC = () => {
       />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', marginBottom: '32px' }}>
-        <StatCard title="OPEN TICKETS" value="4" />
-        <StatCard title="PENDING TICKETS" value="12" />
-        <StatCard title="RESOLVED (TODAY)" value="8" />
+        <StatCard title="OPEN TICKETS" value={String(openCount)} />
+        <StatCard title="PENDING TICKETS" value={String(pendingCount)} />
+        <StatCard title="RESOLVED (TODAY)" value={String(resolvedTodayCount)} />
       </div>
-      
+
       <Card>
-        <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--color-border)', display: 'flex', gap: '16px' }}>
-          <select className="admin-input" style={{ padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', outline: 'none' }}>
-            <option>All Statuses</option>
-            <option>Open</option>
-            <option>Pending</option>
-            <option>Resolved</option>
-          </select>
-          <select className="admin-input" style={{ padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', outline: 'none' }}>
-            <option>All Priorities</option>
-            <option>High</option>
-            <option>Medium</option>
-            <option>Low</option>
-          </select>
-        </div>
         <TableContainer>
           <Table>
             <thead>
               <tr>
                 <th>Ticket</th>
-                <th>Builder</th>
+                <th>Requester</th>
                 <th>Subject</th>
                 <th>Priority</th>
                 <th>Status</th>
@@ -104,24 +146,24 @@ const Support: React.FC = () => {
             <tbody>
               {data.map(record => (
                 <tr key={record.id}>
-                  <td><strong style={{ color: 'var(--color-navy)' }}>{record.ticket}</strong></td>
-                  <td>{record.builder}</td>
+                  <td><strong style={{ color: 'var(--color-navy)' }}>{record.id}</strong></td>
+                  <td>{record.requester} <span style={{ color: 'var(--admin-text-secondary)', fontSize: '12px' }}>({builderName(record.builderId)})</span></td>
                   <td>{record.subject}</td>
                   <td>
-                    <span style={{ 
-                      color: record.priority === 'High' || record.priority === 'Urgent' ? 'var(--color-red)' : record.priority === 'Medium' ? 'var(--color-amber)' : 'var(--color-text-secondary)',
+                    <span style={{
+                      color: record.priority === 'High' ? 'var(--color-red)' : record.priority === 'Medium' ? 'var(--color-amber)' : 'var(--color-text-secondary)',
                       fontWeight: 600
                     }}>
                       {record.priority}
                     </span>
                   </td>
                   <td><StatusBadge status={record.status} /></td>
-                  <td>{record.updated}</td>
+                  <td>{record.lastUpdate}</td>
                   <td style={{ textAlign: 'center' }}>
-                    <Button 
-                      variant="secondary" 
+                    <Button
+                      variant="secondary"
                       size="sm"
-                      style={{ padding: '6px' }} 
+                      style={{ padding: '6px' }}
                       title="View Ticket"
                       onClick={() => {
                         setSelectedTicket(record);
@@ -145,7 +187,6 @@ const Support: React.FC = () => {
         </TableContainer>
       </Card>
 
-      {/* CREATE TICKET MODAL */}
       <Modal
         title="Create Support Ticket"
         isOpen={isCreateModalOpen}
@@ -153,8 +194,8 @@ const Support: React.FC = () => {
         footer={
           <>
             <Button variant="ghost" onClick={() => setIsCreateModalOpen(false)}>Cancel</Button>
-            <Button 
-              variant="primary" 
+            <Button
+              variant="primary"
               onClick={handleCreateSubmit}
               isLoading={isSubmitting}
             >
@@ -164,69 +205,51 @@ const Support: React.FC = () => {
         }
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', paddingTop: '16px' }}>
-          <Input 
-            label="Subject" 
-            required 
-            error={errors.subject} 
-            value={subject} 
-            onChange={e => setSubject(e.target.value)} 
-            placeholder="Brief summary of the issue" 
+          <Input
+            label="Subject"
+            required
+            error={errors.subject}
+            value={subject}
+            onChange={e => setSubject(e.target.value)}
+            placeholder="Brief summary of the issue"
           />
-          
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            <Select 
-              label="Category" 
-              required 
-              value={category} 
-              onChange={e => setCategory(e.target.value)}
-              options={[
-                { value: 'Technical Issue', label: 'Technical Issue' },
-                { value: 'Billing', label: 'Billing' },
-                { value: 'Feature Request', label: 'Feature Request' },
-                { value: 'Other', label: 'Other' }
-              ]}
-            />
-            <Select 
-              label="Priority" 
-              required 
-              value={priority} 
-              onChange={e => setPriority(e.target.value)}
-              options={[
-                { value: 'Low', label: 'Low' },
-                { value: 'Medium', label: 'Medium' },
-                { value: 'High', label: 'High' },
-                { value: 'Urgent', label: 'Urgent' }
-              ]}
-            />
-          </div>
-          
-          <Textarea 
-            label="Description" 
-            required 
+
+          <Select
+            label="Priority"
+            required
+            value={priority}
+            onChange={e => setPriority(e.target.value as 'Low' | 'Medium' | 'High')}
+            options={[
+              { value: 'Low', label: 'Low' },
+              { value: 'Medium', label: 'Medium' },
+              { value: 'High', label: 'High' }
+            ]}
+          />
+
+          <Textarea
+            label="Description"
+            required
             error={errors.description}
-            value={description} 
-            onChange={e => setDescription(e.target.value)} 
-            placeholder="Provide full details..." 
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            placeholder="Provide full details..."
             rows={5}
           />
-          
-          <Input type="file" label="Attachment" />
         </div>
       </Modal>
 
-      {/* VIEW TICKET MODAL */}
       <Modal
-        title={selectedTicket ? `Ticket ${selectedTicket.ticket}: ${selectedTicket.subject}` : 'Ticket'}
+        title={selectedTicket ? `Ticket ${selectedTicket.id}: ${selectedTicket.subject}` : 'Ticket'}
         isOpen={isViewModalOpen}
-        onClose={() => setIsViewModalOpen(false)}
-        size="lg"
+        onClose={() => { setIsViewModalOpen(false); setReplyText(''); }}
+        maxWidth="640px"
       >
         {selectedTicket && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', paddingTop: '16px' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', backgroundColor: 'var(--color-bg)', padding: '16px', borderRadius: 'var(--radius-md)' }}>
               <div>
-                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Builder</div>
-                <div style={{ fontWeight: 600, color: 'var(--color-navy)' }}>{selectedTicket.builder}</div>
+                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Requester</div>
+                <div style={{ fontWeight: 600, color: 'var(--color-navy)' }}>{selectedTicket.requester} ({builderName(selectedTicket.builderId)})</div>
               </div>
               <div>
                 <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Status</div>
@@ -234,28 +257,40 @@ const Support: React.FC = () => {
               </div>
             </div>
 
-            <div style={{ border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '16px' }}>
-              <div style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', marginBottom: '8px' }}>Original Message - {selectedTicket.updated}</div>
-              <p style={{ color: 'var(--color-text)' }}>
-                Hello, we are trying to invite a new contractor to our project but the email invitation is not sending. Could you please check?
-              </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '240px', overflowY: 'auto' }}>
+              {selectedTicket.conversation.length === 0 ? (
+                <div style={{ color: 'var(--color-text-secondary)', fontSize: '13px' }}>No messages yet.</div>
+              ) : (
+                selectedTicket.conversation.map((msg, i) => (
+                  <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '12px', backgroundColor: msg.sender === 'admin' ? 'var(--admin-light-blue, #EFF6FF)' : 'white' }}>
+                    <div style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', marginBottom: '4px' }}>
+                      {msg.sender === 'admin' ? 'Support Team' : selectedTicket.requester} - {new Date(msg.date).toLocaleString()}
+                    </div>
+                    <p style={{ color: 'var(--color-text)', margin: 0 }}>{msg.message}</p>
+                  </div>
+                ))
+              )}
             </div>
 
             <div>
-              <textarea 
-                placeholder="Type your reply here..." 
+              <textarea
+                placeholder="Type your reply here..."
+                value={replyText}
+                onChange={e => setReplyText(e.target.value)}
                 style={{ width: '100%', minHeight: '120px', padding: '12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', resize: 'vertical', outline: 'none', marginBottom: '16px', fontFamily: 'inherit' }}
               />
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', gap: '12px' }}>
-                  <Button variant="secondary">Add Internal Note</Button>
-                  <select className="admin-input" style={{ padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', outline: 'none', fontFamily: 'inherit' }}>
-                    <option>Change Status: Open</option>
-                    <option>Change Status: Pending</option>
-                    <option>Change Status: Resolved</option>
-                  </select>
-                </div>
-                <Button variant="primary" onClick={() => setIsViewModalOpen(false)}>Send Reply</Button>
+                <select
+                  className="admin-input"
+                  style={{ padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', outline: 'none', fontFamily: 'inherit' }}
+                  value={selectedTicket.status}
+                  onChange={e => handleStatusChange(e.target.value as SupportTicket['status'])}
+                >
+                  <option value="Open">Status: Open</option>
+                  <option value="Pending">Status: Pending</option>
+                  <option value="Resolved">Status: Resolved</option>
+                </select>
+                <Button variant="primary" onClick={handleSendReply} disabled={!replyText.trim()}>Send Reply</Button>
               </div>
             </div>
           </div>

@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Clock, Check, Play, ShieldAlert, ArrowLeft, Image as ImageIcon, Upload, Download, Eye } from 'lucide-react';
-import { mockDb, Defect, Unit, Document } from '../../services/mockDb';
+import { mockDb, Defect, Unit, Document, Contractor } from '../../services/mockDb';
 import { useRole } from '../../context/RoleContext';
 import { useAuth } from '../../context/AuthContext';
-import { defectsApi, documentService, auditService } from '../../api/services';
+import { defectsApi, documentService, auditService, contractorsApi } from '../../api/services';
 import { PageLoading, ButtonLoading } from '../../components/LoadingState';
+import { canAccessDefect } from '../../utils/access';
 
 const DefectDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -21,7 +22,8 @@ const DefectDetail: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [actionNote, setActionNote] = useState('');
-  const [contractorSelect, setContractorSelect] = useState('CON-001');
+  const [contractorSelect, setContractorSelect] = useState('');
+  const [projectContractors, setProjectContractors] = useState<Contractor[]>([]);
 
   const loadData = async () => {
     if (!id) return;
@@ -37,6 +39,11 @@ const DefectDetail: React.FC = () => {
         // Fetch evidence documents
         const evDocs = await documentService.getDefectEvidence(d.id);
         setEvidence(evDocs);
+
+        const allContractors = await contractorsApi.getContractors();
+        const scoped = allContractors.filter((c: Contractor) => (c.assignedProjectIds || []).includes(d.projectId));
+        setProjectContractors(scoped);
+        setContractorSelect(prev => prev || scoped[0]?.id || '');
       }
     } finally {
       setLoading(false);
@@ -72,10 +79,9 @@ const DefectDetail: React.FC = () => {
     setIsSubmitting(true);
     
     try {
-      const contractorName = contractorSelect === 'CON-001' ? 'Elite Tiling Solutions' : 
-                             contractorSelect === 'CON-002' ? 'Apex Plumbing Corp' : 'Prime Painting Ltd';
-      
-      await defectsApi.updateDefect(defect.id, 'Assigned', `Assigned to contractor: ${contractorName}`);
+      const contractorName = projectContractors.find(c => c.id === contractorSelect)?.companyName || 'Unknown Contractor';
+
+      await defectsApi.updateDefect(defect.id, 'Assigned', `Assigned to contractor: ${contractorName}`, undefined, contractorSelect);
       await auditService.createAuditLog({
         projectId: activeProjectId,
         unitId: defect.unitId,
@@ -145,6 +151,16 @@ const DefectDetail: React.FC = () => {
     return <div style={{ textAlign: 'center', padding: '48px', color: 'var(--admin-text-secondary)' }}>Defect snag not found.</div>;
   }
 
+  if (!canAccessDefect(user, defect)) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '60vh', textAlign: 'center' }}>
+        <ShieldAlert size={40} color="#DC2626" style={{ marginBottom: '16px' }} />
+        <h1 style={{ color: 'var(--admin-navy)', marginBottom: '8px' }}>Access Denied</h1>
+        <p style={{ color: 'var(--admin-text-secondary)' }}>You do not have permission to view this defect.</p>
+      </div>
+    );
+  }
+
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto', paddingBottom: '64px' }}>
       
@@ -205,7 +221,7 @@ const DefectDetail: React.FC = () => {
               {evidence.map((doc, i) => (
                 <div key={i} style={{ 
                   width: '140px', height: '140px', borderRadius: '8px', border: '1px solid var(--admin-border)',
-                  overflow: 'hidden', flexShrink: 0, backgroundColor: '#f1f5f9', position: 'relative', group: 'true'
+                  overflow: 'hidden', flexShrink: 0, backgroundColor: '#f1f5f9', position: 'relative'
                 }}>
                   {doc.fileType.startsWith('image/') && doc.fileData ? (
                     <img src={doc.fileData} alt={`Evidence ${i+1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -267,11 +283,12 @@ const DefectDetail: React.FC = () => {
               <form onSubmit={handleAssignContractor} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <label className="admin-form-label">Contractor Partner *</label>
                 <select className="admin-form-input" value={contractorSelect} onChange={(e) => setContractorSelect(e.target.value)} style={{ backgroundColor: 'white' }}>
-                  <option value="CON-001">Elite Tiling Solutions (Masonry)</option>
-                  <option value="CON-002">Apex Plumbing Corp (Plumbing)</option>
-                  <option value="CON-003">Prime Painting Ltd (Finishes)</option>
+                  {projectContractors.length === 0 && <option value="">No contractors assigned to this project</option>}
+                  {projectContractors.map(c => (
+                    <option key={c.id} value={c.id}>{c.companyName} ({c.trade})</option>
+                  ))}
                 </select>
-                <button type="submit" className="btn-primary" style={{ justifyContent: 'center' }} disabled={isSubmitting}>
+                <button type="submit" className="btn-primary" style={{ justifyContent: 'center' }} disabled={isSubmitting || !contractorSelect}>
                   {isSubmitting ? <ButtonLoading label="Assigning..." /> : 'Assign Contractor'}
                 </button>
               </form>

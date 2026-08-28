@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { Check, X, AlertTriangle, ArrowLeft } from 'lucide-react';
-import { mockDb, Project, Unit } from '../../services/mockDb';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { AlertTriangle, ArrowLeft } from 'lucide-react';
+import { mockDb, Project, Unit, Contractor } from '../../services/mockDb';
+import { useAuth } from '../../context/AuthContext';
 
 interface ChecklistItem {
   id: string;
@@ -18,12 +19,14 @@ interface ChecklistItem {
 
 const StartInspection: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const unitIdParam = searchParams.get('unitId');
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
-  
+  const [contractors, setContractors] = useState<Contractor[]>([]);
+
   // Selection
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [selectedUnitId, setSelectedUnitId] = useState('');
@@ -49,6 +52,7 @@ const StartInspection: React.FC = () => {
     setProjects(projs);
     const unts = mockDb.getUnits();
     setUnits(unts);
+    setContractors(mockDb.getContractors());
 
     if (unitIdParam) {
       const targetUnit = unts.find(u => u.id === unitIdParam);
@@ -71,6 +75,8 @@ const StartInspection: React.FC = () => {
     }
   }, [selectedProjectId]);
 
+  const projectContractors = contractors.filter(c => (c.assignedProjectIds || []).includes(selectedProjectId));
+
   const handleStatusChange = (itemId: string, status: 'Pass' | 'Fail' | 'N/A') => {
     setChecklist(prev => prev.map(item => {
       if (item.id === itemId) {
@@ -81,7 +87,7 @@ const StartInspection: React.FC = () => {
           defectTitle: status === 'Fail' ? `Defect: ${item.name}` : undefined,
           defectLoc: status === 'Fail' ? 'Various locations' : undefined,
           defectSeverity: status === 'Fail' ? 'Medium' : undefined,
-          defectContractor: status === 'Fail' ? 'CON-001' : undefined
+          defectContractor: status === 'Fail' ? (projectContractors[0]?.id || '') : undefined
         };
       }
       return item;
@@ -113,7 +119,7 @@ const StartInspection: React.FC = () => {
         builderId,
         projectId: selectedProjectId,
         unitId: selectedUnitId,
-        inspectorId: 'USR-000', // Assuming current user is inspector
+        inspectorId: user?.id || '',
         status: 'Completed',
         date: new Date().toISOString().split('T')[0],
         notes: 'Quality Audit Inspection (Failed)'
@@ -130,7 +136,7 @@ const StartInspection: React.FC = () => {
           description: item.defectDesc || 'Discovered during quality audit.',
           location: item.defectLoc || 'Unit Interior',
           severity: item.defectSeverity || 'Medium',
-          contractorId: item.defectContractor || 'CON-001',
+          contractorId: item.defectContractor || projectContractors[0]?.id || '',
           evidence: []
         });
       });
@@ -150,7 +156,7 @@ const StartInspection: React.FC = () => {
         builderId,
         projectId: selectedProjectId,
         unitId: selectedUnitId,
-        inspectorId: 'USR-000',
+        inspectorId: user?.id || '',
         status: 'Completed',
         date: new Date().toISOString().split('T')[0],
         notes: 'Quality Audit Inspection (Passed)'
@@ -342,14 +348,15 @@ const StartInspection: React.FC = () => {
                             </div>
                             <div>
                               <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, marginBottom: '4px' }}>Assign Contractor</label>
-                              <select 
+                              <select
                                 value={item.defectContractor}
                                 onChange={(e) => handleDefectChange(item.id, 'defectContractor', e.target.value)}
                                 style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid var(--admin-border)', backgroundColor: 'white', fontSize: '12px' }}
                               >
-                                <option value="CON-001">Elite Tiling Solutions</option>
-                                <option value="CON-002">Apex Plumbing Corp</option>
-                                <option value="CON-003">Prime Painting Ltd</option>
+                                {projectContractors.length === 0 && <option value="">No contractors assigned to this project</option>}
+                                {projectContractors.map(c => (
+                                  <option key={c.id} value={c.id}>{c.companyName}</option>
+                                ))}
                               </select>
                             </div>
                           </div>
