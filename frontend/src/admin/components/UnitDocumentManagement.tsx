@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Upload, FileText, AlertTriangle, Download, Eye, RefreshCw } from 'lucide-react';
-import { Document } from '../../services/mockDb';
+import { Document } from '../../types';;
 import { documentService } from '../../api/services';
 import { useRole } from '../../context/RoleContext';
 import { ButtonLoading } from '../../components/LoadingState';

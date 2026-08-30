@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Check, ArrowRight } from 'lucide-react';
-import { mockDb, AssociationTransition } from '../../services/mockDb';
+import { AssociationTransition } from '../../types';
+import { transitionsService } from '../../services/transitionsService';;
 import { useRole } from '../../context/RoleContext';
 
 const AssociationTransitionPage: React.FC = () => {
@@ -8,11 +9,11 @@ const AssociationTransitionPage: React.FC = () => {
   const [transition, setTransition] = useState<AssociationTransition | null>(null);
 
   const loadData = () => {
-    const list = mockDb.getTransitions();
+    const list = transitionsService.getTransitions();
     let current = list.find(t => t.builderId === activeBuilderId);
     if (!current) {
       // Seed default
-      current = mockDb.updateTransitionStep(activeBuilderId, 'Preparation');
+      current = transitionsService.updateTransitionStep(activeBuilderId, 'Preparation');
     }
     setTransition(current);
   };
@@ -22,7 +23,7 @@ const AssociationTransitionPage: React.FC = () => {
   }, [activeBuilderId]);
 
   const handleStepChange = (step: AssociationTransition['step']) => {
-    mockDb.updateTransitionStep(activeBuilderId, step);
+    transitionsService.updateTransitionStep(activeBuilderId, step);
     loadData();
   };
 
@@ -32,7 +33,7 @@ const AssociationTransitionPage: React.FC = () => {
     const nextStatus = currentStatus === 'Pending' ? 'In Progress' : 
                      currentStatus === 'In Progress' ? 'Completed' : 'Pending';
     
-    mockDb.updateTransitionItem(activeBuilderId, field, nextStatus);
+    transitionsService.updateTransitionItem(activeBuilderId, field, nextStatus);
     loadData();
   };
 

@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Users, CheckSquare, Activity, Building, IndianRupee } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { mockDb, Project, Unit, Customer, Payment } from '../../services/mockDb';
+import { Project, Unit, Customer, Payment } from '../../types';
+import { projectsService } from '../../services/projectsService';
+import { customersService } from '../../services/customersService';
+import { paymentsService } from '../../services/paymentsService';;
 
 const AccountsDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -14,10 +17,10 @@ const AccountsDashboard: React.FC = () => {
   useEffect(() => {
     if (!user) return;
 
-    const allProjects = mockDb.getProjects();
-    const allCustomers = mockDb.getCustomers();
-    const allUnits = mockDb.getUnits();
-    const allPayments = mockDb.getPayments();
+    const allProjects = projectsService.getProjects();
+    const allCustomers = customersService.getCustomers();
+    const allUnits = projectsService.getUnits();
+    const allPayments = paymentsService.getPayments();
 
     const assignedIds = user.assignedProjectIds || [];
 

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, ReactNode } from 'react';
-import { initMockDb } from '../services/mockDb';
+import { getStore } from '../storage/localStore';
 import { useAuth } from './AuthContext';
 
 export type UserRole = 
@@ -23,9 +23,9 @@ const RoleContext = createContext<RoleContextType | undefined>(undefined);
 export const RoleProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   
-  // Initialize mock database upon load
+  // Initialize local store upon load
   useEffect(() => {
-    initMockDb();
+    getStore();
   }, []);
 
   const activeRole = (user?.role as UserRole) || 'super_admin';

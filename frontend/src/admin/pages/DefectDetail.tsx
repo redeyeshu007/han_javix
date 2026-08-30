@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Clock, Check, Play, ShieldAlert, ArrowLeft, Image as ImageIcon, Upload, Download, Eye } from 'lucide-react';
-import { mockDb, Defect, Unit, Document, Contractor } from '../../services/mockDb';
+import { Defect, Unit, Document, Contractor } from '../../types';
+import { projectsService } from '../../services/projectsService';;
 import { useRole } from '../../context/RoleContext';
 import { useAuth } from '../../context/AuthContext';
 import { defectsApi, documentService, auditService, contractorsApi } from '../../api/services';
@@ -32,7 +33,7 @@ const DefectDetail: React.FC = () => {
       const d = defectsList.find(def => def.id === id);
       if (d) {
         setDefect(d);
-        const unitsList = mockDb.getUnits();
+        const unitsList = projectsService.getUnits();
         const u = unitsList.find(unit => unit.id === d.unitId);
         if (u) setUnit(u);
         

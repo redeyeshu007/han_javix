@@ -10,7 +10,9 @@ import {
   Building,
   ArrowRight
 } from 'lucide-react';
-import { mockDb, Project, Unit, Defect } from '../../services/mockDb';
+import { Project, Unit, Defect } from '../../types';
+import { projectsService } from '../../services/projectsService';
+import { defectsService } from '../../services/defectsService';;
 import { useRole } from '../../context/RoleContext';
 import { Card, CardBody } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -23,15 +25,15 @@ const BuilderDashboard: React.FC = () => {
   
   useEffect(() => {
     const loadData = () => {
-      const bProjects = mockDb.getProjects(activeBuilderId);
+      const bProjects = projectsService.getProjects(activeBuilderId);
       setProjects(bProjects);
       
-      const allUnits = mockDb.getUnits();
+      const allUnits = projectsService.getUnits();
       const builderProjectsIds = bProjects.map(p => p.id);
       const bUnits = allUnits.filter(u => builderProjectsIds.includes(u.projectId));
       setUnits(bUnits);
 
-      const allDefects = mockDb.getDefects();
+      const allDefects = defectsService.getDefects();
       const bDefects = allDefects.filter(d => builderProjectsIds.includes(d.projectId));
       setDefects(bDefects);
     };

@@ -15,7 +15,7 @@ import {
   Eye,
   EyeOff
 } from 'lucide-react';
-import { Unit, Customer, Defect, ServiceRequest, Project, Document, Block, Floor } from '../../services/mockDb';
+import { Unit, Customer, Defect, ServiceRequest, Project, Document, Block, Floor } from '../../types';;
 import { computeHandoverReadiness, MUNICIPAL_DOCS_CATEGORY } from '../../utils/handoverReadiness';
 import { useRole } from '../../context/RoleContext';
 import { unitsApi, projectsApi, customersApi, defectsApi, serviceRequestsApi, paymentService, auditService, contractorsApi } from '../../api/services';

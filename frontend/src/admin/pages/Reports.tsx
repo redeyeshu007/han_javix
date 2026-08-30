@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FileBarChart, Download, FileText, Filter } from 'lucide-react';
-import { Project } from '../../services/mockDb';
+import { Project } from '../../types';;
 import { projectsApi, defectsApi, unitsApi } from '../../api/services';
 import { PageLoading, ButtonLoading } from '../../components/LoadingState';
 

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { CheckSquare, Search, ChevronRight } from 'lucide-react';
-import { mockDb, Unit, Project } from '../../services/mockDb';
+import { Unit, Project } from '../../types';
+import { projectsService } from '../../services/projectsService';;
 
 const InspectionsList: React.FC = () => {
   const [units, setUnits] = useState<Unit[]>([]);
@@ -9,8 +10,8 @@ const InspectionsList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    setUnits(mockDb.getUnits());
-    setProjects(mockDb.getProjects());
+    setUnits(projectsService.getUnits());
+    setProjects(projectsService.getProjects());
   }, []);
 
   const filteredUnits = units.filter(u => {

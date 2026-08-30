@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, Key, Check, X } from 'lucide-react';
-import { mockDb, Unit, Project } from '../../services/mockDb';
+import { Unit, Project } from '../../types';
+import { projectsService } from '../../services/projectsService';
+import { documentsService } from '../../services/documentsService';
+import { defectsService } from '../../services/defectsService';
+import { paymentsService } from '../../services/paymentsService';;
 import { computeHandoverReadiness } from '../../utils/handoverReadiness';
 
 const HandoverWorkspace: React.FC = () => {
@@ -13,11 +17,11 @@ const HandoverWorkspace: React.FC = () => {
   const [defects, setDefects] = useState<any[]>([]);
 
   const loadData = () => {
-    setUnits(mockDb.getUnits());
-    setProjects(mockDb.getProjects());
-    setDocuments(mockDb.getDocuments());
-    setDefects(mockDb.getDefects());
-    if (mockDb.getPayments) setPayments(mockDb.getPayments());
+    setUnits(projectsService.getUnits());
+    setProjects(projectsService.getProjects());
+    setDocuments(documentsService.getDocuments());
+    setDefects(defectsService.getDefects());
+    if (paymentsService.getPayments) setPayments(paymentsService.getPayments());
   };
 
   useEffect(() => {

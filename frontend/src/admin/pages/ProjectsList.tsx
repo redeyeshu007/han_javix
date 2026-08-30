@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Search, ChevronRight, Briefcase } from 'lucide-react';
-import { mockDb, Project } from '../../services/mockDb';
+import { Project } from '../../types';
+import { projectsService } from '../../services/projectsService';;
 import { useRole } from '../../context/RoleContext';
 import { useAuth } from '../../context/AuthContext';
 import { canAccessProject } from '../../utils/access';
@@ -28,7 +29,7 @@ const ProjectsList: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const loadProjects = () => {
-    const list = mockDb.getProjects(activeBuilderId);
+    const list = projectsService.getProjects(activeBuilderId);
     setProjects(list.filter(p => canAccessProject(user, p.id, p.builderId)));
   };
 
@@ -48,7 +49,7 @@ const ProjectsList: React.FC = () => {
     setIsSubmitting(true);
 
     setTimeout(() => {
-      mockDb.createProject({
+      projectsService.createProject({
         builderId: activeBuilderId,
         name: newProjectName,
         status: newProjectStatus as any

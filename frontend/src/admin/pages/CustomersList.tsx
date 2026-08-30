@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, User } from 'lucide-react';
-import { mockDb, Customer, Unit } from '../../services/mockDb';
+import { Customer, Unit } from '../../types';
+import { customersService } from '../../services/customersService';
+import { projectsService } from '../../services/projectsService';;
 import { useRole } from '../../context/RoleContext';
 
 const CustomersList: React.FC = () => {
@@ -11,8 +13,8 @@ const CustomersList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    setCustomers(mockDb.getCustomers(activeBuilderId));
-    setUnits(mockDb.getUnits());
+    setCustomers(customersService.getCustomers(activeBuilderId));
+    setUnits(projectsService.getUnits());
   }, [activeBuilderId]);
 
   const filtered = customers.filter(c => 

@@ -7,7 +7,7 @@ import { Table, TableContainer } from '../../components/ui/Table';
 import { Card } from '../../components/ui/Card';
 import { Input, Select, Textarea } from '../../components/ui/FormElements';
 import { supportApi, buildersApi } from '../../api/services';
-import { SupportTicket, Builder } from '../../services/mockDb';
+import { SupportTicket, Builder } from '../../types';;
 import { PageLoading } from '../../components/LoadingState';
 import { useAuth } from '../../context/AuthContext';
 

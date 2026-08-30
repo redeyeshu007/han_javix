@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Plus } from 'lucide-react';
 import { useRole } from '../../context/RoleContext';
-import { mockDb, User } from '../../services/mockDb';
+import { User } from '../../types';
+import { usersService } from '../../services/usersService';;
 import { projectsApi } from '../../api/services';
 import { CredentialSuccessCard } from '../../components/CredentialSuccessCard';
 import { MultiSelect } from '../../components/ui/MultiSelect';
@@ -31,7 +32,7 @@ const TeamList: React.FC = () => {
 
   useEffect(() => {
     // Load members from mockDb instead of static state
-    const allUsers = mockDb.getUsers();
+    const allUsers = usersService.getUsers();
 
     // Filter for team roles within this builder only (exclude super_admin, customer, contractor)
     const teamUsers = allUsers.filter(u =>
@@ -125,7 +126,7 @@ const TeamList: React.FC = () => {
       }
 
       try {
-        const newUser = mockDb.createUser({
+        const newUser = usersService.createUser({
           name: `${firstName} ${lastName}`,
           email,
           phone,
@@ -216,7 +217,7 @@ const TeamList: React.FC = () => {
       }
 
       try {
-        const userToUpdate = mockDb.getUsers().find(u => u.id === editingMemberId);
+        const userToUpdate = usersService.getUsers().find(u => u.id === editingMemberId);
         if (userToUpdate) {
           const updatedUser = {
             ...userToUpdate,

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { AlertTriangle, Search, ChevronRight } from 'lucide-react';
-import { mockDb, Defect, Unit } from '../../services/mockDb';
+import { Defect, Unit } from '../../types';
+import { defectsService } from '../../services/defectsService';
+import { projectsService } from '../../services/projectsService';;
 import { useAuth } from '../../context/AuthContext';
 import { canAccessDefect } from '../../utils/access';
 
@@ -13,8 +15,8 @@ const DefectsList: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<'All' | 'Open' | 'Assigned' | 'In Progress' | 'Resolved' | 'Closed'>('All');
 
   const loadDefects = () => {
-    setDefects(mockDb.getDefects().filter(d => canAccessDefect(user, d)));
-    setUnits(mockDb.getUnits());
+    setDefects(defectsService.getDefects().filter(d => canAccessDefect(user, d)));
+    setUnits(projectsService.getUnits());
   };
 
   useEffect(() => {

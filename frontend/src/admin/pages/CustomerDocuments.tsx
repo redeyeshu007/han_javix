@@ -3,7 +3,7 @@ import { FileText, Download, Eye, ShieldCheck, Upload, AlertCircle, CheckCircle,
 import { useAuth } from '../../context/AuthContext';
 import { unitsApi, documentService } from '../../api/services';
 import { PageLoading, ButtonLoading } from '../../components/LoadingState';
-import { Document } from '../../services/mockDb';
+import { Document } from '../../types';;
 import { friendlyStatus } from '../../utils/customerCopy';
 import '../admin.css';
 

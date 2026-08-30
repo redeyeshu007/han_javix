@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, mockDb } from '../services/mockDb';
+import { User } from '../types/models';
+import { usersService } from '../services/usersService';
 
 interface AuthContextType {
   user: User | null;
@@ -21,7 +22,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       try {
         const mockSessionId = localStorage.getItem('mock_session_id');
         if (mockSessionId) {
-          const foundUser = mockDb.findUserById(mockSessionId);
+          const foundUser = usersService.findUserById(mockSessionId);
           if (foundUser && foundUser.status === 'Active') {
             setUser(foundUser);
           } else {
@@ -40,7 +41,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   const login = async (email: string, password: string) => {
-    const authenticatedUser = mockDb.authenticateUser(email, password);
+    const authenticatedUser = usersService.authenticateUser(email, password);
     if (authenticatedUser) {
       localStorage.setItem('mock_session_id', authenticatedUser.id);
       setUser(authenticatedUser);
@@ -58,7 +59,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const refreshUser = () => {
     const mockSessionId = localStorage.getItem('mock_session_id');
     if (mockSessionId) {
-      const foundUser = mockDb.findUserById(mockSessionId);
+      const foundUser = usersService.findUserById(mockSessionId);
       if (foundUser) setUser(foundUser);
     }
   };

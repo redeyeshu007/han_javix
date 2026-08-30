@@ -1,4 +1,4 @@
-import { Unit, Document, Payment, Defect } from '../services/mockDb';
+import { Unit, Document, Payment, Defect } from '../types';;
 
 export const OWNERSHIP_DOCS_CATEGORY = 'Ownership & Identity Documents';
 export const MUNICIPAL_DOCS_CATEGORY = 'Municipal Certificate of Occupancy';

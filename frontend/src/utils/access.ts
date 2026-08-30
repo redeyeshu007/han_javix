@@ -1,4 +1,4 @@
-import { User, Defect, Document } from '../services/mockDb';
+import { User, Defect, Document } from '../types';;
 
 /**
  * Centralized project-scoping rules. Every list/detail page and route guard

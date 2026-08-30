@@ -8,7 +8,7 @@ import { Dropdown, DropdownItem } from '../../components/ui/Dropdown';
 import { Table, TableContainer } from '../../components/ui/Table';
 import { Card } from '../../components/ui/Card';
 import { buildersApi, projectsApi } from '../../api/services';
-import { Builder } from '../../services/mockDb';
+import { Builder } from '../../types';;
 import { PageLoading } from '../../components/LoadingState';
 
 const BuildersList: React.FC = () => {

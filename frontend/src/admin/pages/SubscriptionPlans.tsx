@@ -7,7 +7,7 @@ import { Table, TableContainer } from '../../components/ui/Table';
 import { Card } from '../../components/ui/Card';
 import { Input, Select, Textarea } from '../../components/ui/FormElements';
 import { plansApi, buildersApi } from '../../api/services';
-import { Plan, Builder } from '../../services/mockDb';
+import { Plan, Builder } from '../../types';;
 import { PageLoading } from '../../components/LoadingState';
 
 const SubscriptionPlans: React.FC = () => {

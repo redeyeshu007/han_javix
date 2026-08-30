@@ -2,7 +2,7 @@ import React from 'react';
 import { useParams } from 'react-router-dom';
 import { ShieldAlert } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { mockDb } from '../services/mockDb';
+import { projectsService } from '../services/projectsService';;
 import { canAccessProject } from '../utils/access';
 
 interface ProjectAccessGuardProps {
@@ -24,11 +24,11 @@ const ProjectAccessGuard: React.FC<ProjectAccessGuardProps> = ({ children, type 
 
   if (id) {
     if (type === 'project') {
-      const project = mockDb.getProjects().find(p => p.id === id);
+      const project = projectsService.getProjects().find(p => p.id === id);
       projectId = project?.id;
       projectBuilderId = project?.builderId;
     } else {
-      const unit = mockDb.getUnits().find(u => u.id === id);
+      const unit = projectsService.getUnits().find(u => u.id === id);
       projectId = unit?.projectId;
       projectBuilderId = unit?.builderId;
     }

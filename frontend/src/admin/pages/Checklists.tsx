@@ -7,7 +7,7 @@ import { Table, TableContainer } from '../../components/ui/Table';
 import { Card } from '../../components/ui/Card';
 import { Input, Select, Textarea } from '../../components/ui/FormElements';
 import { checklistsApi } from '../../api/services';
-import { ChecklistTemplate } from '../../services/mockDb';
+import { ChecklistTemplate } from '../../types';;
 import { PageLoading } from '../../components/LoadingState';
 
 const Checklists: React.FC = () => {

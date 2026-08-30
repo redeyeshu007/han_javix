@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Wrench, Check } from 'lucide-react';
-import { mockDb, ServiceRequest, Unit, Customer } from '../../services/mockDb';
+import { ServiceRequest, Unit, Customer } from '../../types';
+import { serviceRequestsService } from '../../services/serviceRequestsService';
+import { projectsService } from '../../services/projectsService';
+import { customersService } from '../../services/customersService';;
 
 const CareWorkspace: React.FC = () => {
   const [requests, setRequests] = useState<ServiceRequest[]>([]);
@@ -8,9 +11,9 @@ const CareWorkspace: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
 
   const loadData = () => {
-    setRequests(mockDb.getServiceRequests());
-    setUnits(mockDb.getUnits());
-    setCustomers(mockDb.getCustomers());
+    setRequests(serviceRequestsService.getServiceRequests());
+    setUnits(projectsService.getUnits());
+    setCustomers(customersService.getCustomers());
   };
 
   useEffect(() => {
@@ -20,12 +23,12 @@ const CareWorkspace: React.FC = () => {
   }, []);
 
   const handleUpdateStatus = (id: string, status: ServiceRequest['status']) => {
-    mockDb.updateServiceRequest(id, status);
+    serviceRequestsService.updateServiceRequest(id, status);
     loadData();
   };
 
   const handleAssignContractor = (id: string, contractorId: string) => {
-    mockDb.updateServiceRequest(id, 'Assign', contractorId);
+    serviceRequestsService.updateServiceRequest(id, 'Assign', contractorId);
     loadData();
   };
 

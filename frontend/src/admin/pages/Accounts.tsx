@@ -7,7 +7,7 @@ import { Table, TableContainer } from '../../components/ui/Table';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/FormElements';
 import { usersApi, buildersApi } from '../../api/services';
-import { User, Builder } from '../../services/mockDb';
+import { User, Builder } from '../../types';;
 import { PageLoading } from '../../components/LoadingState';
 
 const ROLE_LABELS: Record<string, string> = {

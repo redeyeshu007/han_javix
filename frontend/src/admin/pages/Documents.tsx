@@ -3,7 +3,7 @@ import { FileText, Download, Eye, Check, X, Filter } from 'lucide-react';
 import { useRole } from '../../context/RoleContext';
 import { documentService, unitsApi, projectsApi, auditService } from '../../api/services';
 import { PageLoading, ButtonLoading } from '../../components/LoadingState';
-import { Document, Unit, Project } from '../../services/mockDb';
+import { Document, Unit, Project } from '../../types';;
 import '../admin.css';
 
 const Documents: React.FC = () => {

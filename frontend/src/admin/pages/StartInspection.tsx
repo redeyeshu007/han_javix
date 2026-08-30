@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AlertTriangle, ArrowLeft } from 'lucide-react';
-import { mockDb, Project, Unit, Contractor } from '../../services/mockDb';
+import { Project, Unit, Contractor } from '../../types';
+import { projectsService } from '../../services/projectsService';
+import { contractorsService } from '../../services/contractorsService';
+import { inspectionsService } from '../../services/inspectionsService';
+import { defectsService } from '../../services/defectsService';;
 import { useAuth } from '../../context/AuthContext';
 
 interface ChecklistItem {
@@ -48,11 +52,11 @@ const StartInspection: React.FC = () => {
 
   // Loading selections
   useEffect(() => {
-    const projs = mockDb.getProjects();
+    const projs = projectsService.getProjects();
     setProjects(projs);
-    const unts = mockDb.getUnits();
+    const unts = projectsService.getUnits();
     setUnits(unts);
-    setContractors(mockDb.getContractors());
+    setContractors(contractorsService.getContractors());
 
     if (unitIdParam) {
       const targetUnit = unts.find(u => u.id === unitIdParam);
@@ -68,7 +72,7 @@ const StartInspection: React.FC = () => {
   // Load units whenever project changes
   useEffect(() => {
     if (selectedProjectId) {
-      const projectUnits = mockDb.getUnits().filter(u => u.projectId === selectedProjectId);
+      const projectUnits = projectsService.getUnits().filter(u => u.projectId === selectedProjectId);
       if (projectUnits.length > 0 && !unitIdParam) {
         setSelectedUnitId(projectUnits[0].id);
       }
@@ -115,7 +119,7 @@ const StartInspection: React.FC = () => {
       const builderId = activeProj?.builderId || 'BLD-001';
 
       // Create Inspection Record
-      const newInspection = mockDb.createInspection({
+      const newInspection = inspectionsService.createInspection({
         builderId,
         projectId: selectedProjectId,
         unitId: selectedUnitId,
@@ -127,7 +131,7 @@ const StartInspection: React.FC = () => {
 
       // Create defects for all failed items
       failedItems.forEach(item => {
-        mockDb.createDefect({
+        defectsService.createDefect({
           builderId,
           unitId: selectedUnitId,
           projectId: selectedProjectId,
@@ -142,7 +146,7 @@ const StartInspection: React.FC = () => {
       });
 
       // Update unit status to Defects Found, inspection Failed
-      mockDb.updateUnit(selectedUnitId, {
+      projectsService.updateUnit(selectedUnitId, {
         status: 'Defects Found',
         inspectionStatus: 'Failed',
         defectsCleared: false
@@ -152,7 +156,7 @@ const StartInspection: React.FC = () => {
       const builderId = activeProj?.builderId || 'BLD-001';
 
       // Create Inspection Record
-      mockDb.createInspection({
+      inspectionsService.createInspection({
         builderId,
         projectId: selectedProjectId,
         unitId: selectedUnitId,
@@ -163,7 +167,7 @@ const StartInspection: React.FC = () => {
       });
 
       // Update unit status to Approved, inspection Passed
-      mockDb.updateUnit(selectedUnitId, {
+      projectsService.updateUnit(selectedUnitId, {
         status: 'Approved',
         inspectionStatus: 'Passed',
         defectsCleared: true

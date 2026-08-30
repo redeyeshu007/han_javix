@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Plus, FolderPlus } from 'lucide-react';
-import { mockDb, Project, Block, Floor, Unit } from '../../services/mockDb';
+import { Project, Block, Floor, Unit } from '../../types';
+import { projectsService } from '../../services/projectsService';;
 
 const ProjectDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -43,19 +44,19 @@ const ProjectDetail: React.FC = () => {
 
   const loadAllData = () => {
     if (!id) return;
-    const p = mockDb.getProjects().find(proj => proj.id === id);
+    const p = projectsService.getProjects().find(proj => proj.id === id);
     if (p) {
       setProject(p);
-      const blks = mockDb.getBlocks(id);
+      const blks = projectsService.getBlocks(id);
       setBlocks(blks);
       
       const flrs: Floor[] = [];
       blks.forEach(blk => {
-        flrs.push(...mockDb.getFloors(blk.id));
+        flrs.push(...projectsService.getFloors(blk.id));
       });
       setFloors(flrs);
 
-      const allUnits = mockDb.getUnits();
+      const allUnits = projectsService.getUnits();
       setUnits(allUnits.filter(u => u.projectId === id));
     }
   };
@@ -95,7 +96,7 @@ const ProjectDetail: React.FC = () => {
 
     setIsSubmitting(true);
     setTimeout(() => {
-      mockDb.createBlock({
+      projectsService.createBlock({
         builderId: project?.builderId || '',
         projectId: id!,
         name: newBlockName
@@ -123,7 +124,7 @@ const ProjectDetail: React.FC = () => {
 
     setIsSubmitting(true);
     setTimeout(() => {
-      mockDb.createFloor({
+      projectsService.createFloor({
         builderId: project?.builderId || '',
         projectId: id!,
         blockId: floorBlockId,
@@ -151,7 +152,7 @@ const ProjectDetail: React.FC = () => {
 
     setIsSubmitting(true);
     setTimeout(() => {
-      mockDb.createUnit({
+      projectsService.createUnit({
         builderId: project?.builderId || '',
         projectId: id!,
         blockId: unitBlockId,

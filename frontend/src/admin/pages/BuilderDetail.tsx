@@ -3,7 +3,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Pause, Play } from 'lucide-react';
 import { PageHeader, StatusBadge, StatCard, AdminPanel } from '../components/AdminUI';
 import { buildersApi, projectsApi, usersApi, unitsApi } from '../../api/services';
-import { Builder, Project } from '../../services/mockDb';
+import { Builder, Project } from '../../types';;
 import { PageLoading } from '../../components/LoadingState';
 
 const BuilderDetail: React.FC = () => {

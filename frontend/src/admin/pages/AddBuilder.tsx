@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Check, Building2, User, CreditCard, ClipboardCheck, Upload } from 'lucide-react';
 import { PageHeader } from '../components/AdminUI';
-import { mockDb } from '../../services/mockDb';
+import { buildersService } from '../../services/buildersService';
+import { usersService } from '../../services/usersService';;
 import { CredentialSuccessCard } from '../../components/CredentialSuccessCard';
 import { Eye, EyeOff } from 'lucide-react';
 
@@ -79,7 +80,7 @@ const AddBuilder: React.FC = () => {
     setLoading(true);
 
     setTimeout(() => {
-      const newBuilder = mockDb.createBuilder({
+      const newBuilder = buildersService.createBuilder({
         name: companyName,
         contact: adminFullName,
         email: corporateEmail,
@@ -90,7 +91,7 @@ const AddBuilder: React.FC = () => {
         status: 'Active'
       });
 
-      mockDb.createUser({
+      usersService.createUser({
         name: adminFullName,
         email: adminEmail,
         phone: adminPhone,
