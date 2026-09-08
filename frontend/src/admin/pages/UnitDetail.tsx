@@ -39,6 +39,7 @@ const UnitDetail: React.FC = () => {
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [floors, setFloors] = useState<Floor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Tab control
@@ -92,47 +93,115 @@ const UnitDetail: React.FC = () => {
   const loadData = async () => {
     if (!id) return;
     try {
-      const unitsList = await unitsApi.getUnits();
-      const u = unitsList.find(unit => unit.id === id);
+      setError(null);
+      const u = await unitsApi.getUnit(id);
       if (u) {
-        setUnit(u);
+        const normalizedUnit: Unit = {
+          ...u,
+          id: String(u.id),
+          name: u.name || u.unit_number || `Unit ${u.id}`,
+          projectId: String(u.projectId || u.project_id || u.floor?.block?.project || ''),
+          blockId: String(u.blockId || u.block_id || u.floor?.block || ''),
+          floorId: String(u.floorId || u.floor_id || u.floor || ''),
+          type: u.type || u.unit_type || 'Apartment',
+          areaSqFt: Number(u.areaSqFt || u.area_sqft || 0),
+          bedrooms: Number(u.bedrooms || 0),
+          bathrooms: Number(u.bathrooms || 0),
+          parking: u.parking || u.parking_details || '',
+          status: u.status || 'not_started',
+          customerId: (u.customerId || u.customer) ? String(u.customerId || u.customer) : null,
+          inspectionStatus: u.inspectionStatus || 'Pending',
+          docsCleared: Boolean(u.docsCleared),
+          paymentCleared: Boolean(u.paymentCleared),
+          defectsCleared: Boolean(u.defectsCleared),
+          keysHandedOver: Boolean(u.keysHandedOver),
+          approvalsCleared: Boolean(u.approvalsCleared),
+        };
+        setUnit(normalizedUnit);
         
-        const projectsList = await projectsApi.getProjects();
-        const p = projectsList.find(proj => proj.id === u.projectId);
-        if (p) setProject(p);
+        const targetProjectId = normalizedUnit.projectId;
+        let p: any = null;
+        if (targetProjectId) {
+          try {
+            const projectsList = await projectsApi.getProjects();
+            p = projectsList.find((proj: any) => String(proj.id) === targetProjectId);
+            if (p) setProject(p);
+          } catch (e) {
+            console.warn('Could not load project for unit', e);
+          }
 
-        const blocksList = await unitsApi.getBlocks(u.projectId);
-        setBlocks(blocksList);
-        const floorsList = await unitsApi.getFloors();
-        setFloors(floorsList.filter(f => f.projectId === u.projectId));
+          try {
+            const blocksList = await unitsApi.getBlocks(targetProjectId);
+            setBlocks(blocksList);
+          } catch (e) {
+            console.warn('Could not load blocks for project', e);
+          }
 
-        if (u.customerId) {
-          const customersList = await customersApi.getCustomers();
-          const c = customersList.find(cust => cust.id === u.customerId);
-          if (c) setCustomer(c);
+          try {
+            const floorsList = await unitsApi.getFloors();
+            setFloors(floorsList.filter((f: any) => String(f.projectId || f.project_id) === targetProjectId));
+          } catch (e) {
+            console.warn('Could not load floors for project', e);
+          }
+        }
+
+        if (normalizedUnit.customerId) {
+          try {
+            const customersList = await customersApi.getCustomers();
+            const c = customersList.find((cust: any) => String(cust.id) === String(normalizedUnit.customerId));
+            if (c) setCustomer(c);
+          } catch (e) {
+            console.warn('Could not load customer', e);
+          }
         } else {
           setCustomer(null);
         }
 
-        const docsList = await (await import('../../api/services')).documentService.getDocuments();
-        setDocuments(docsList.filter((d: any) => d.unitId === id));
+        try {
+          const docsList = await (await import('../../api/services')).documentService.getDocuments();
+          setDocuments(docsList.filter((d: any) => String(d.unitId) === String(id)));
+        } catch (e) {
+          console.warn('Could not load documents', e);
+        }
+
         if (paymentService.getPayments) {
-          const paymentsList = await paymentService.getPayments(id);
-          setPayments(paymentsList);
+          try {
+            const paymentsList = await paymentService.getPayments(id);
+            setPayments(paymentsList);
+          } catch (e) {
+            console.warn('Could not load payments', e);
+          }
         }
         
-        const defectsList = await defectsApi.getDefects();
-        setDefects(defectsList.filter((d: any) => d.unitId === id));
+        try {
+          const defectsList = await defectsApi.getDefects();
+          setDefects(defectsList.filter((d: any) => String(d.unitId) === String(id)));
+        } catch (e) {
+          console.warn('Could not load defects', e);
+        }
 
-        const allSR = await serviceRequestsApi.getRequests();
-        setServiceRequests(allSR.filter(sr => sr.unitId === id));
+        try {
+          const allSR = await serviceRequestsApi.getRequests();
+          setServiceRequests(allSR.filter((sr: any) => String(sr.unitId) === String(id)));
+        } catch (e) {
+          console.warn('Could not load service requests', e);
+        }
 
-        const allContractors = await contractorsApi.getContractors();
-        setContractorsList(allContractors.filter((c: any) => 
-          c.builderId === (p?.builderId || activeBuilderId) && 
-          (c.assignedProjectIds || []).includes(u.projectId)
-        ));
+        try {
+          const allContractors = await contractorsApi.getContractors();
+          setContractorsList(allContractors.filter((c: any) => 
+            c.builderId === (p?.builderId || activeBuilderId) && 
+            (c.assignedProjectIds || []).includes(targetProjectId)
+          ));
+        } catch (e) {
+          console.warn('Could not load contractors', e);
+        }
+      } else {
+        setError('Unit not found');
       }
+    } catch (err: any) {
+      console.error('Failed to load unit details:', err);
+      setError(err?.response?.status === 404 ? 'Unit not found' : 'Failed to load unit details');
     } finally {
       setLoading(false);
     }
@@ -318,13 +387,40 @@ const UnitDetail: React.FC = () => {
 
   if (loading) return <PageLoading message="Loading unit details..." />;
 
-  if (!unit) {
-    return <div style={{ textAlign: 'center', padding: '48px', color: 'var(--admin-text-secondary)' }}>Loading unit details...</div>;
+  if (error || !unit) {
+    const backUrl = window.location.pathname.startsWith('/builder') ? '/builder/projects' : '/admin/projects';
+    return (
+      <div style={{ textAlign: 'center', padding: '48px', color: 'var(--admin-text-secondary)' }}>
+        <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '8px', color: '#0F172A' }}>
+          {error || 'Unit Not Found'}
+        </h3>
+        <p style={{ color: '#64748B', marginBottom: '16px' }}>
+          {error === 'Unit not found'
+            ? 'The requested unit could not be found or you do not have permission to view it.'
+            : 'Unable to load unit details from the database.'}
+        </p>
+        <Link to={backUrl} className="btn-secondary" style={{ padding: '8px 16px', fontSize: '14px', textDecoration: 'none', display: 'inline-block' }}>
+          Back to Projects
+        </Link>
+      </div>
+    );
   }
 
   const unitDocsData = documents;
   const unitPayments = payments;
   const unitDefects = defects;
+
+  const roleStr = (activeRole as string)?.toUpperCase() || '';
+  const canEditUnit = roleStr === 'BUILDER_OWNER' || roleStr === 'PROJECT_ADMIN' || roleStr === 'PROJECT_MANAGER' || roleStr === 'SUPER_ADMIN';
+  const canInspect = roleStr === 'SITE_ENGINEER' || roleStr === 'BUILDER_OWNER' || roleStr === 'PROJECT_ADMIN';
+  const canApproveDocs = roleStr === 'CRM' || roleStr === 'BUILDER_OWNER' || roleStr === 'SUPER_ADMIN';
+  const canRecordPayment = roleStr === 'BUILDER_OWNER' || roleStr === 'ACCOUNTS' || roleStr === 'CUSTOMER';
+  const canVerifyPayment = roleStr === 'ACCOUNTS' || roleStr === 'BUILDER_OWNER' || roleStr === 'SUPER_ADMIN';
+
+  const statusStr = (unit.status as string)?.toLowerCase() || '';
+  const isHandedOver = statusStr === 'handed over' || statusStr === 'handed_over';
+  const isApproved = statusStr === 'approved' || statusStr === 'ready_for_handover';
+  const isDefects = statusStr === 'defects found' || statusStr === 'defect_resolution';
 
   const municipalDocs = unitDocsData.filter(d => d.category === MUNICIPAL_DOCS_CATEGORY);
 
@@ -364,8 +460,8 @@ const UnitDetail: React.FC = () => {
       
       {/* Back Button */}
       <div style={{ marginBottom: '24px' }}>
-        <Link to={`/admin/projects/${unit.projectId}`} className="btn-secondary" style={{ padding: '8px 16px', fontSize: '13px' }}>
-          Back to Project Structure
+        <Link to={window.location.pathname.startsWith('/builder') ? `/builder/projects/${unit.projectId}` : `/admin/projects/${unit.projectId}`} className="btn-secondary" style={{ padding: '8px 16px', fontSize: '13px' }}>
+          &larr; Back to Project
         </Link>
       </div>
 
@@ -408,27 +504,27 @@ const UnitDetail: React.FC = () => {
               borderRadius: '9999px',
               fontSize: '14px',
               fontWeight: 600,
-              backgroundColor: unit.status === 'Handed Over' ? '#F1F5F9' : 
-                             unit.status === 'Approved' ? '#ECFDF5' : 
-                             unit.status === 'Defects Found' ? '#FEF2F2' : '#FFFBEB',
-              color: unit.status === 'Handed Over' ? '#475569' : 
-                     unit.status === 'Approved' ? '#059669' : 
-                     unit.status === 'Defects Found' ? '#DC2626' : '#D97706',
+              backgroundColor: isHandedOver ? '#F1F5F9' : 
+                             isApproved ? '#ECFDF5' : 
+                             isDefects ? '#FEF2F2' : '#FFFBEB',
+              color: isHandedOver ? '#475569' : 
+                     isApproved ? '#059669' : 
+                     isDefects ? '#DC2626' : '#D97706',
               border: `1px solid ${
-                unit.status === 'Handed Over' ? '#E2E8F0' : 
-                unit.status === 'Approved' ? '#A7F3D0' : 
-                unit.status === 'Defects Found' ? '#FECACA' : '#FDE68A'
+                isHandedOver ? '#E2E8F0' : 
+                isApproved ? '#A7F3D0' : 
+                isDefects ? '#FECACA' : '#FDE68A'
               }`
             }}>
               <div style={{ 
                 width: '8px', height: '8px', borderRadius: '50%', marginRight: '8px',
-                backgroundColor: unit.status === 'Handed Over' ? '#94A3B8' : 
-                               unit.status === 'Approved' ? '#10B981' : 
-                               unit.status === 'Defects Found' ? '#EF4444' : '#F59E0B'
+                backgroundColor: isHandedOver ? '#94A3B8' : 
+                               isApproved ? '#10B981' : 
+                               isDefects ? '#EF4444' : '#F59E0B'
               }} />
-              {unit.status}
+              {unit.status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
             </span>
-            {(activeRole === 'builder_admin' || activeRole === 'project_manager') && (
+            {canEditUnit && (
               <button className="btn-secondary" onClick={openEditUnit} style={{ padding: '6px 16px', fontSize: '13px' }}>
                 Edit Unit
               </button>
@@ -649,7 +745,7 @@ const UnitDetail: React.FC = () => {
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
               <h3 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--admin-navy)', margin: 0 }}>Unit Inspection</h3>
-              {activeRole === 'site_engineer' || activeRole === 'builder_admin' ? (
+              {canInspect ? (
                 <Link to={`/admin/inspections/new?unitId=${unit.id}`} className="btn-primary">
                   <CheckSquare size={16} /> Start Inspection
                 </Link>
@@ -695,7 +791,7 @@ const UnitDetail: React.FC = () => {
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
               <h3 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--admin-navy)', margin: 0 }}>Logged Defects / Snags</h3>
-              {activeRole === 'site_engineer' || activeRole === 'builder_admin' ? (
+              {canInspect ? (
                 <button className="btn-primary" onClick={() => setShowLogDefect(true)}>
                   <Plus size={16} /> Log Defect
                 </button>
@@ -790,7 +886,7 @@ const UnitDetail: React.FC = () => {
                     <span style={{ fontSize: '13px', fontWeight: 600, color: actualApprovalsCleared ? 'var(--admin-accent)' : '#DC2626' }}>
                       {actualApprovalsCleared ? 'Cleared' : 'Awaiting Review'}
                     </span>
-                    {(activeRole === 'crm' || activeRole === 'builder_admin' || activeRole === 'super_admin') ? (
+                    {canApproveDocs ? (
                       <button 
                         className="btn-secondary" 
                         style={{ padding: '6px 12px', fontSize: '12px', opacity: pendingMunicipalDoc ? 1 : 0.5, cursor: pendingMunicipalDoc ? 'pointer' : 'not-allowed' }}
@@ -815,7 +911,7 @@ const UnitDetail: React.FC = () => {
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
               <h3 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--admin-navy)', margin: 0 }}>Financial Ledger clearance</h3>
-              {(activeRole === 'builder_admin' || activeRole === 'accounts' || activeRole === 'customer') && (
+              {canRecordPayment && (
                 <button 
                   className="btn-primary" 
                   onClick={() => setShowPaymentModal(true)}
@@ -882,7 +978,7 @@ const UnitDetail: React.FC = () => {
                         )}
                       </td>
                       <td>
-                        {payment.status !== 'Cleared' && payment.status !== 'Rejected' && (activeRole === 'accounts' || activeRole === 'builder_admin' || activeRole === 'super_admin') ? (
+                        {payment.status !== 'Cleared' && payment.status !== 'Rejected' && canVerifyPayment ? (
                            <div style={{ display: 'flex', gap: '8px' }}>
                              {payment.status === 'Pending Verification' && (
                                <>

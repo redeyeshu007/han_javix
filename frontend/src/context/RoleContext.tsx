@@ -1,16 +1,9 @@
 import React, { createContext, useContext, useEffect, ReactNode } from 'react';
 import { getStore } from '../storage/localStore';
 import { useAuth } from './AuthContext';
+import { AppRole } from '../utils/roleUtils';
 
-export type UserRole = 
-  | 'super_admin' 
-  | 'builder_admin' 
-  | 'project_manager' 
-  | 'site_engineer' 
-  | 'crm' 
-  | 'accounts' 
-  | 'contractor'
-  | 'customer';
+export type UserRole = AppRole;
 
 interface RoleContextType {
   activeRole: UserRole;
@@ -28,7 +21,7 @@ export const RoleProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     getStore();
   }, []);
 
-  const activeRole = (user?.role as UserRole) || 'super_admin';
+  const activeRole = (user?.role?.toUpperCase() as UserRole) || 'SUPER_ADMIN';
   const activeBuilderId = user?.builderId || '';
   const activeProjectId = user?.projectId || '';
 

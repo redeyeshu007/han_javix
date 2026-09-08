@@ -39,7 +39,7 @@ django.setup()
 from django.contrib.auth import get_user_model
 User = get_user_model()
 if not User.objects.filter(email='admin@handoverly.com').exists():
-    User.objects.create_superuser('admin@handoverly.com', 'Admin@1234', is_active=True)
+    User.objects.create_superuser('admin@handoverly.com', 'Admin@1234', is_active=True, role='SUPER_ADMIN')
     print("Super Admin created.")
 else:
     print("Super Admin already exists.")

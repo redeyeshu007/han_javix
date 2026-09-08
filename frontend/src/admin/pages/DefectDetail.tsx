@@ -199,7 +199,7 @@ const DefectDetail: React.FC = () => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
             <strong style={{ fontSize: '14px', color: 'var(--admin-navy)' }}>Evidence Photos:</strong>
             
-            {(activeRole === 'site_engineer' || activeRole === 'contractor' || activeRole === 'builder_admin') && (
+            {(activeRole === 'SITE_ENGINEER' || activeRole === 'CONTRACTOR' || activeRole === 'BUILDER_OWNER' || activeRole === 'PROJECT_ADMIN' || activeRole === 'SUPER_ADMIN') && (
               <div>
                 <input 
                   type="file" accept="image/*,.pdf" style={{ display: 'none' }} 
@@ -280,7 +280,7 @@ const DefectDetail: React.FC = () => {
           </h3>
           <div style={{ backgroundColor: 'white', border: '1px solid var(--admin-border)', borderRadius: '12px', padding: '24px', boxShadow: '0 2px 8px rgba(7, 26, 51, 0.01)' }}>
             
-            {defect.status === 'Open' && (activeRole === 'builder_admin' || activeRole === 'project_manager') && (
+            {defect.status === 'Open' && (activeRole === 'BUILDER_OWNER' || activeRole === 'PROJECT_MANAGER' || activeRole === 'PROJECT_ADMIN' || activeRole === 'SUPER_ADMIN') && (
               <form onSubmit={handleAssignContractor} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <label className="admin-form-label">Contractor Partner *</label>
                 <select className="admin-form-input" value={contractorSelect} onChange={(e) => setContractorSelect(e.target.value)} style={{ backgroundColor: 'white' }}>
@@ -295,7 +295,7 @@ const DefectDetail: React.FC = () => {
               </form>
             )}
 
-            {defect.status === 'Assigned' && (activeRole === 'contractor' || activeRole === 'builder_admin') && (
+            {defect.status === 'Assigned' && (activeRole === 'CONTRACTOR' || activeRole === 'BUILDER_OWNER' || activeRole === 'PROJECT_ADMIN' || activeRole === 'SUPER_ADMIN') && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <button className="btn-primary" style={{ justifyContent: 'center' }} disabled={isSubmitting} onClick={() => handleStatusUpdate('In Progress', 'Contractor started work on this repair.')}>
                   {isSubmitting ? <ButtonLoading label="Updating..." /> : <><Play size={16} /> Mark as In Progress</>}
@@ -303,7 +303,7 @@ const DefectDetail: React.FC = () => {
               </div>
             )}
 
-            {defect.status === 'In Progress' && (activeRole === 'contractor' || activeRole === 'builder_admin') && (
+            {defect.status === 'In Progress' && (activeRole === 'CONTRACTOR' || activeRole === 'BUILDER_OWNER' || activeRole === 'PROJECT_ADMIN' || activeRole === 'SUPER_ADMIN') && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div>
                   <label className="admin-form-label">Resolution Notes *</label>
@@ -315,7 +315,7 @@ const DefectDetail: React.FC = () => {
               </div>
             )}
 
-            {defect.status === 'Resolved' && (activeRole === 'site_engineer' || activeRole === 'builder_admin') && (
+            {defect.status === 'Resolved' && (activeRole === 'SITE_ENGINEER' || activeRole === 'BUILDER_OWNER' || activeRole === 'PROJECT_ADMIN' || activeRole === 'SUPER_ADMIN') && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div style={{ padding: '12px', backgroundColor: '#EFF6FF', borderRadius: '8px', border: '1px solid #B0C8F2', fontSize: '13px', color: 'var(--admin-navy)' }}>
                   <strong>Contractor Report:</strong> {defect.resolutionEvidence || 'Repairs completed.'}
@@ -331,7 +331,7 @@ const DefectDetail: React.FC = () => {
               </div>
             )}
 
-            {defect.status === 'Closed' && (activeRole === 'site_engineer' || activeRole === 'builder_admin') && (
+            {defect.status === 'Closed' && (activeRole === 'SITE_ENGINEER' || activeRole === 'BUILDER_OWNER' || activeRole === 'PROJECT_ADMIN' || activeRole === 'SUPER_ADMIN') && (
               <div style={{ textAlign: 'center' }}>
                 <div style={{ color: 'var(--admin-accent)', fontWeight: 600, marginBottom: '12px' }}>✓ Snag is Closed & Cleared</div>
                 <button className="btn-secondary" style={{ width: '100%', justifyContent: 'center' }} disabled={isSubmitting} onClick={() => handleStatusUpdate('Open', 'Defect snag reopened for audit.')}>
@@ -340,7 +340,7 @@ const DefectDetail: React.FC = () => {
               </div>
             )}
 
-            {((defect.status === 'Open' && activeRole === 'contractor') || (defect.status === 'Resolved' && activeRole === 'contractor') || (defect.status === 'Closed' && activeRole === 'contractor')) && (
+            {((defect.status === 'Open' && activeRole === 'CONTRACTOR') || (defect.status === 'Resolved' && activeRole === 'CONTRACTOR') || (defect.status === 'Closed' && activeRole === 'CONTRACTOR')) && (
               <div style={{ textAlign: 'center', color: 'var(--admin-text-secondary)', fontSize: '13px' }}>Awaiting actions from builder/inspector team.</div>
             )}
 

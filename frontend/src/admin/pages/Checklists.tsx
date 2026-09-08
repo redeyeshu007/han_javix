@@ -1,14 +1,29 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Edit2, Archive, RotateCcw } from 'lucide-react';
-import { PageHeader, StatusBadge } from '../components/AdminUI';
+import { Plus, Edit2, Archive, RotateCcw, Search, ClipboardCheck } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
-import { Table, TableContainer } from '../../components/ui/Table';
-import { Card } from '../../components/ui/Card';
 import { Input, Select, Textarea } from '../../components/ui/FormElements';
 import { checklistsApi } from '../../api/services';
-import { ChecklistTemplate } from '../../types';;
+import { ChecklistTemplate } from '../../types';
 import { PageLoading } from '../../components/LoadingState';
+
+const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
+  const isActive = status === 'Active';
+  const isDraft = status === 'Draft';
+  
+  return (
+    <span className={`inline-flex items-center px-2 py-1 rounded-md text-[11px] font-semibold border uppercase tracking-wider
+      ${isActive ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+      : isDraft ? 'bg-amber-50 text-amber-700 border-amber-200' 
+      : 'bg-slate-50 text-slate-600 border-slate-200'}
+    `}>
+      {isActive && <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 mr-1.5"></span>}
+      {isDraft && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5"></span>}
+      {!isActive && !isDraft && <span className="w-1.5 h-1.5 rounded-full bg-slate-400 mr-1.5"></span>}
+      {status}
+    </span>
+  );
+};
 
 const Checklists: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -23,6 +38,7 @@ const Checklists: React.FC = () => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<any>({});
+  const [searchQuery, setSearchQuery] = useState('');
 
   const fetchData = async () => {
     try {
@@ -71,7 +87,7 @@ const Checklists: React.FC = () => {
       if (editingChecklist) {
         await checklistsApi.updateChecklist(editingChecklist.id, { name, category, description, status });
       } else {
-        await checklistsApi.createChecklist({ name, category, description, status, items: 0 });
+        await checklistsApi.createChecklist({ name, category, description, status } as any);
       }
       await fetchData();
       setIsModalOpen(false);
@@ -94,68 +110,127 @@ const Checklists: React.FC = () => {
 
   if (loading) return <PageLoading />;
 
-  return (
-    <div>
-      <PageHeader
-        title="Standard Checklists"
-        subtitle="Manage reusable inspection checklists across the platform."
-        action={
-          <Button variant="primary" onClick={() => handleOpenModal()} leftIcon={<Plus size={18} />}>
-            New Checklist
-          </Button>
-        }
-      />
+  const filteredData = data.filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()) || item.category.toLowerCase().includes(searchQuery.toLowerCase()));
 
-      <Card>
-        <TableContainer>
-          <Table>
-            <thead>
-              <tr>
-                <th>Checklist Name</th>
-                <th>Category</th>
-                <th>Items</th>
-                <th>Status</th>
-                <th>Updated</th>
-                <th style={{ width: '120px' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.map(record => (
-                <tr key={record.id}>
-                  <td><strong style={{ color: 'var(--admin-navy)' }}>{record.name}</strong></td>
-                  <td>{record.category}</td>
-                  <td>{record.items}</td>
-                  <td><StatusBadge status={record.status} /></td>
-                  <td>{record.updated}</td>
-                  <td>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <Button variant="secondary" size="sm" style={{ padding: '6px' }} title="Edit" onClick={() => handleOpenModal(record)}>
-                        <Edit2 size={14} />
-                      </Button>
-                      {record.status === 'Archived' ? (
-                        <Button variant="secondary" size="sm" style={{ padding: '6px' }} title="Restore" onClick={() => handleArchiveToggle(record)}>
-                          <RotateCcw size={14} />
-                        </Button>
-                      ) : (
-                        <Button variant="danger" size="sm" style={{ padding: '6px' }} title="Archive" onClick={() => handleArchiveToggle(record)}>
-                          <Archive size={14} />
-                        </Button>
-                      )}
-                    </div>
-                  </td>
+  return (
+    <div className="bg-[#F8FAFC] min-h-screen p-4 md:p-6 lg:p-8 font-sans text-[#0F172A] w-full flex-1 relative z-0">
+      <div className="max-w-[1600px] mx-auto w-full">
+        
+        {/* Page Header */}
+        <section className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 mt-2">
+          <div>
+            <h1 className="text-[24px] font-bold text-[#0F172A] tracking-tight">
+              Standard Checklists
+            </h1>
+            <p className="text-[14px] text-slate-500 mt-1 font-medium">
+              Manage reusable inspection checklists across the platform.
+            </p>
+          </div>
+          <button 
+            onClick={() => handleOpenModal()}
+            className="inline-flex items-center justify-center px-4 py-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[14px] font-medium rounded-lg shadow-sm transition-colors"
+          >
+            <Plus size={16} className="mr-1.5" strokeWidth={2.5} />
+            New Checklist
+          </button>
+        </section>
+
+        {/* Table Card */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+          
+          {/* Table Header/Toolbar */}
+          <div className="p-4 border-b border-slate-200 flex flex-col md:flex-row items-center justify-between gap-4 bg-white">
+            <div className="relative w-full max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input 
+                type="text" 
+                placeholder="Search checklists..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-4 py-1.5 bg-white border border-slate-200 rounded-md text-[13px] font-medium text-[#0F172A] placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#2563EB] focus:border-[#2563EB] transition-colors shadow-sm"
+              />
+            </div>
+          </div>
+
+          <div className="overflow-x-auto min-h-[300px]">
+            <table className="w-full text-left text-sm whitespace-nowrap">
+              <thead>
+                <tr className="bg-[#F8FAFC] border-b border-slate-200 text-slate-500 font-semibold text-[11px] uppercase tracking-wider">
+                  <th className="px-5 py-3">Checklist Name</th>
+                  <th className="px-5 py-3">Category</th>
+                  <th className="px-5 py-3">Items</th>
+                  <th className="px-5 py-3">Status</th>
+                  <th className="px-5 py-3">Updated</th>
+                  <th className="px-5 py-3 text-right">Actions</th>
                 </tr>
-              ))}
-              {data.length === 0 && (
-                <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', padding: '32px', color: 'var(--admin-text-secondary)' }}>
-                    No checklists found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </Table>
-        </TableContainer>
-      </Card>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredData.map(record => (
+                  <tr key={record.id} className="hover:bg-slate-50/50 transition-colors group">
+                    <td className="px-5 py-3">
+                      <div className="font-semibold text-[#0F172A] text-[13px]">{record.name}</div>
+                    </td>
+                    <td className="px-5 py-3">
+                      <span className="text-slate-600 font-medium text-[13px]">{record.category}</span>
+                    </td>
+                    <td className="px-5 py-3">
+                      <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-semibold text-[12px] border border-slate-200">
+                        {record.items}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3">
+                      <StatusBadge status={record.status} />
+                    </td>
+                    <td className="px-5 py-3 text-slate-500 text-[13px]">
+                      {record.updated}
+                    </td>
+                    <td className="px-5 py-3 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <button 
+                          onClick={() => handleOpenModal(record)}
+                          className="p-1.5 text-slate-400 hover:text-[#2563EB] hover:bg-[#2563EB]/10 rounded-md transition-colors"
+                          title="Edit"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        {record.status === 'Archived' ? (
+                          <button 
+                            onClick={() => handleArchiveToggle(record)}
+                            className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition-colors"
+                            title="Restore"
+                          >
+                            <RotateCcw size={16} />
+                          </button>
+                        ) : (
+                          <button 
+                            onClick={() => handleArchiveToggle(record)}
+                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                            title="Archive"
+                          >
+                            <Archive size={16} />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {filteredData.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-5 py-16 text-center">
+                      <div className="flex flex-col items-center justify-center text-slate-400">
+                        <ClipboardCheck className="w-8 h-8 mb-3 opacity-40" />
+                        <p className="font-medium text-[#0F172A]">No checklists found</p>
+                        <p className="text-sm mt-1">Get started by creating a new checklist template.</p>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
 
       <Modal
         title={editingChecklist ? 'Edit Checklist' : 'Create New Checklist'}
@@ -164,17 +239,13 @@ const Checklists: React.FC = () => {
         footer={
           <>
             <Button variant="ghost" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-            <Button
-              variant="primary"
-              onClick={handleSave}
-              isLoading={isSubmitting}
-            >
+            <Button variant="primary" onClick={handleSave} isLoading={isSubmitting}>
               {editingChecklist ? 'Save Changes' : 'Create Checklist'}
             </Button>
           </>
         }
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', paddingTop: '16px' }}>
+        <div className="flex flex-col gap-4 pt-4">
           <Input label="Checklist Name" required error={errors.name} value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Pre-Handover Quality Check" />
           <Select
             label="Category"

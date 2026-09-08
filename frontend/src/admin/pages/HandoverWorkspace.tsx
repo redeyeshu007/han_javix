@@ -1,20 +1,52 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Search, Key, Check, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Search, Key, Check, X, ArrowRight } from 'lucide-react';
 import { Unit, Project } from '../../types';
 import { projectsService } from '../../services/projectsService';
 import { documentsService } from '../../services/documentsService';
 import { defectsService } from '../../services/defectsService';
-import { paymentsService } from '../../services/paymentsService';;
+import { paymentsService } from '../../services/paymentsService';
 import { computeHandoverReadiness } from '../../utils/handoverReadiness';
+import { PageLoading } from '../../components/LoadingState';
+
+const StatusBadge: React.FC<{ isReady: boolean }> = ({ isReady }) => {
+  return (
+    <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold border tracking-wide uppercase
+      ${isReady ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'}
+    `}>
+      {isReady && <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 mr-1.5"></span>}
+      {!isReady && <span className="w-1.5 h-1.5 rounded-full bg-rose-600 mr-1.5"></span>}
+      {isReady ? 'READY' : 'BLOCKED'}
+    </span>
+  );
+};
+
+const ChecklistItem: React.FC<{ label: string, isCleared: boolean }> = ({ label, isCleared }) => {
+  return (
+    <div className="flex flex-col items-center justify-center">
+      <span className="text-[10px] font-bold text-slate-400 mb-1 tracking-wider uppercase">{label}</span>
+      {isCleared ? (
+        <div className="w-6 h-6 rounded-full bg-emerald-50 flex items-center justify-center border border-emerald-100">
+          <Check size={14} className="text-emerald-600 stroke-[3]" />
+        </div>
+      ) : (
+        <div className="w-6 h-6 rounded-full bg-rose-50 flex items-center justify-center border border-rose-100">
+          <X size={14} className="text-rose-600 stroke-[3]" />
+        </div>
+      )}
+    </div>
+  );
+};
 
 const HandoverWorkspace: React.FC = () => {
+  const navigate = useNavigate();
   const [units, setUnits] = useState<Unit[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [documents, setDocuments] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
   const [defects, setDefects] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const loadData = () => {
     setUnits(projectsService.getUnits());
@@ -22,11 +54,12 @@ const HandoverWorkspace: React.FC = () => {
     setDocuments(documentsService.getDocuments());
     setDefects(defectsService.getDefects());
     if (paymentsService.getPayments) setPayments(paymentsService.getPayments());
+    setLoading(false);
   };
 
   useEffect(() => {
-    loadData();
-    const interval = setInterval(loadData, 2000);
+    setTimeout(loadData, 400);
+    const interval = setInterval(loadData, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -36,122 +69,113 @@ const HandoverWorkspace: React.FC = () => {
     return searchStr.includes(searchTerm.toLowerCase());
   });
 
+  if (loading) return <PageLoading />;
+
   return (
-    <div style={{ maxWidth: '1000px', margin: '0 auto', paddingBottom: '48px' }}>
-      
-      {/* Header */}
-      <div style={{ marginBottom: '32px' }}>
-        <h1 style={{ fontSize: '28px', fontWeight: 700, color: 'var(--admin-navy)', margin: '0' }}>Handover Workspace</h1>
-        <p style={{ fontSize: '14px', color: 'var(--admin-text-secondary)', marginTop: '4px' }}>
-          Overview of units nearing occupancy. Clear outstanding compliance and schedule key transitions.
-        </p>
-      </div>
-
-      {/* Toolbar */}
-      <div style={{
-        display: 'flex',
-        gap: '16px',
-        marginBottom: '24px',
-        backgroundColor: 'white',
-        padding: '16px',
-        borderRadius: '8px',
-        border: '1px solid var(--admin-border)'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, border: '1px solid var(--admin-border)', borderRadius: '6px', padding: '0 12px', backgroundColor: 'var(--admin-bg)' }}>
-          <Search size={18} color="#718096" />
-          <input 
-            type="text" 
-            placeholder="Search unit or project..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ border: 'none', background: 'transparent', width: '100%', padding: '8px 0', outline: 'none', color: 'var(--admin-navy)', fontSize: '14px' }}
-          />
-        </div>
-      </div>
-
-      {/* Handover List */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        {filtered.length > 0 ? (
-          filtered.map(u => {
-            const proj = projects.find(p => p.id === u.projectId);
-            const unitDocs = documents.filter(d => d.unitId === u.id);
-            const unitPayments = payments.filter(p => p.unitId === u.id);
-            const unitDefects = defects.filter(d => d.unitId === u.id);
-
-            const { docsCleared, approvalsCleared, paymentCleared, defectsCleared, isReadyForHandover: isReady } =
-              computeHandoverReadiness(u, unitDocs, unitPayments, unitDefects);
-
-            return (
-              <div key={u.id} style={{
-                backgroundColor: 'white',
-                border: '1px solid var(--admin-border)',
-                borderRadius: '10px',
-                padding: '20px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                boxShadow: '0 2px 8px rgba(7, 26, 51, 0.01)'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: '1 1 200px' }}>
-                  <div style={{
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '8px',
-                    backgroundColor: 'var(--admin-light-blue)',
-                    color: 'var(--admin-accent)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
-                    <Key size={20} />
-                  </div>
-                  <div>
-                    <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--admin-navy)', margin: '0 0 4px 0' }}>Unit {u.name}</h3>
-                    <span style={{ fontSize: '12px', color: 'var(--admin-text-secondary)' }}>Project: <strong>{proj?.name}</strong></span>
-                  </div>
-                </div>
-
-                {/* Audit Checklist columns */}
-                <div style={{ display: 'flex', gap: '20px', flex: '2 1 400px', justifyContent: 'center' }}>
-                  <div style={{ textAlign: 'center' }}>
-                    <span style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: 'var(--admin-text-secondary)', marginBottom: '4px' }}>DOCS</span>
-                    {docsCleared ? <Check size={16} color="var(--admin-accent)" /> : <X size={16} color="#DC2626" />}
-                  </div>
-                  <div style={{ textAlign: 'center' }}>
-                    <span style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: 'var(--admin-text-secondary)', marginBottom: '4px' }}>PAYMENT</span>
-                    {paymentCleared ? <Check size={16} color="var(--admin-accent)" /> : <X size={16} color="#DC2626" />}
-                  </div>
-                  <div style={{ textAlign: 'center' }}>
-                    <span style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: 'var(--admin-text-secondary)', marginBottom: '4px' }}>SNAGS</span>
-                    {defectsCleared ? <Check size={16} color="var(--admin-accent)" /> : <X size={16} color="#DC2626" />}
-                  </div>
-                  <div style={{ textAlign: 'center' }}>
-                    <span style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: 'var(--admin-text-secondary)', marginBottom: '4px' }}>APPROVAL</span>
-                    {approvalsCleared ? <Check size={16} color="var(--admin-accent)" /> : <X size={16} color="#DC2626" />}
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flex: '1 1 200px', justifyContent: 'flex-end' }}>
-                  <span className={`status-badge status-badge--${isReady ? 'success' : 'warning'}`}>
-                    {isReady ? 'READY' : 'BLOCKED'}
-                  </span>
-
-                  <Link to={`/admin/units/${u.id}`} className="btn-secondary" style={{ padding: '8px 14px', fontSize: '12px' }}>
-                    View Workspace
-                  </Link>
-                </div>
-
-              </div>
-            );
-          })
-        ) : (
-          <div style={{ textAlign: 'center', padding: '48px', backgroundColor: 'white', border: '1px solid var(--admin-border)', borderRadius: '12px', color: 'var(--admin-text-secondary)' }}>
-            <Key size={36} style={{ opacity: 0.5, marginBottom: '12px' }} />
-            <h3>No units ready or in handover pipeline</h3>
+    <div className="bg-[#F8FAFC] min-h-screen p-4 md:p-6 lg:p-8 font-sans text-[#0F172A] w-full flex-1">
+      <div className="max-w-[1600px] mx-auto w-full">
+        
+        {/* Page Header */}
+        <section className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 mt-2">
+          <div>
+            <h1 className="text-[24px] font-bold text-[#0F172A] tracking-tight">
+              Handover Workspace
+            </h1>
+            <p className="text-[14px] text-slate-500 mt-1 font-medium">
+              Overview of units nearing occupancy. Clear outstanding compliance and schedule key transitions.
+            </p>
           </div>
-        )}
-      </div>
+        </section>
 
+        {/* Table Card */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+          
+          <div className="p-4 border-b border-slate-200 flex flex-col md:flex-row items-center justify-between gap-4 bg-white">
+            <div className="relative w-full max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input 
+                type="text" 
+                placeholder="Search unit or project..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-4 py-1.5 bg-white border border-slate-200 rounded-md text-[13px] font-medium text-[#0F172A] placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#2563EB] focus:border-[#2563EB] transition-colors shadow-sm"
+              />
+            </div>
+          </div>
+
+          <div className="overflow-x-auto min-h-[300px]">
+            <table className="w-full text-left text-sm whitespace-nowrap">
+              <thead>
+                <tr className="bg-[#F8FAFC] border-b border-slate-200 text-slate-500 font-semibold text-[11px] uppercase tracking-wider">
+                  <th className="px-5 py-3">Unit</th>
+                  <th className="px-5 py-3">Project</th>
+                  <th className="px-5 py-3 text-center">Clearance Audit</th>
+                  <th className="px-5 py-3 text-center">Overall Readiness</th>
+                  <th className="px-5 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filtered.map(u => {
+                  const proj = projects.find(p => p.id === u.projectId);
+                  const unitDocs = documents.filter(d => d.unitId === u.id);
+                  const unitPayments = payments.filter(p => p.unitId === u.id);
+                  const unitDefects = defects.filter(d => d.unitId === u.id);
+
+                  const { docsCleared, approvalsCleared, paymentCleared, defectsCleared, isReadyForHandover: isReady } =
+                    computeHandoverReadiness(u, unitDocs, unitPayments, unitDefects);
+
+                  return (
+                    <tr key={u.id} className="hover:bg-slate-50/50 transition-colors group">
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+                            <Key size={16} />
+                          </div>
+                          <div className="font-semibold text-[#0F172A] text-[14px]">Unit {u.name}</div>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4 text-slate-500 text-[13px]">
+                        {proj?.name}
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="flex items-center justify-center gap-6">
+                          <ChecklistItem label="Docs" isCleared={docsCleared} />
+                          <ChecklistItem label="Payment" isCleared={paymentCleared} />
+                          <ChecklistItem label="Snags" isCleared={defectsCleared} />
+                          <ChecklistItem label="Approval" isCleared={approvalsCleared} />
+                        </div>
+                      </td>
+                      <td className="px-5 py-4 text-center">
+                        <StatusBadge isReady={isReady} />
+                      </td>
+                      <td className="px-5 py-4 text-right">
+                        <button 
+                          onClick={() => navigate(`/builder/units/${u.id}`)}
+                          className="inline-flex items-center justify-center px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-[#0F172A] text-[12px] font-semibold rounded-md shadow-sm transition-colors group-hover:border-[#2563EB] group-hover:text-[#2563EB]"
+                        >
+                          Workspace
+                          <ArrowRight size={14} className="ml-1.5" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {filtered.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-5 py-16 text-center">
+                      <div className="flex flex-col items-center justify-center text-slate-400">
+                        <Key className="w-8 h-8 mb-3 opacity-40" />
+                        <p className="font-medium text-[#0F172A]">No units in handover pipeline</p>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
     </div>
   );
 };

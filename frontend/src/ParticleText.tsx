@@ -292,7 +292,7 @@ const ParticleText: React.FC<ParticleTextProps> = ({
       offCtx.fillText(content, padding - left, padding + ascent);
 
       const imageData = offCtx.getImageData(0, 0, offscreen.width, offscreen.height);
-      const targets = [];
+      const targets: any[] = [];
       const step = Math.max(2, Math.floor(density));
 
       for (let y = 0; y < offscreen.height; y += step) {

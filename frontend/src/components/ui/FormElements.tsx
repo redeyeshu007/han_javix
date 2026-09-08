@@ -13,23 +13,29 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement>,
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ label, error, helperText, className = '', leftIcon, rightIcon, ...props }, ref) => {
     return (
-      <div className={`ui-form-group ${className}`}>
-        {label && <label className="ui-label">{label} {props.required && <span style={{color: 'red'}}>*</span>}</label>}
-        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-          {leftIcon && <span style={{ position: 'absolute', left: '12px', display: 'flex', color: '#64748b' }}>{leftIcon}</span>}
+      <div className={`flex flex-col gap-1.5 ${className}`}>
+        {label && (
+          <label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
+            {label} {props.required && <span className="text-red-500">*</span>}
+          </label>
+        )}
+        <div className="relative flex items-center">
+          {leftIcon && <span className="absolute left-3 text-slate-400 flex items-center">{leftIcon}</span>}
           <input 
             ref={ref} 
-            className={`ui-input ${error ? 'error' : ''}`} 
+            className={`w-full px-4 py-2.5 bg-white border rounded-lg text-[14px] text-[#0F172A] focus:outline-none focus:ring-2 transition-colors shadow-sm
+              ${error ? 'border-red-300 focus:ring-red-200 focus:border-red-500' : 'border-slate-200 focus:ring-[#2563EB]/20 focus:border-[#2563EB]'}
+            `} 
             style={{ 
               paddingLeft: leftIcon ? '40px' : undefined,
               paddingRight: rightIcon ? '40px' : undefined
             }}
             {...props} 
           />
-          {rightIcon && <span style={{ position: 'absolute', right: '12px', display: 'flex', color: '#64748b' }}>{rightIcon}</span>}
+          {rightIcon && <span className="absolute right-3 text-slate-400 flex items-center">{rightIcon}</span>}
         </div>
-        {error && <div className="ui-error-text">{error}</div>}
-        {helperText && !error && <div className="ui-helper-text">{helperText}</div>}
+        {error && <div className="text-[12px] font-medium text-red-500">{error}</div>}
+        {helperText && !error && <div className="text-[12px] text-slate-500">{helperText}</div>}
       </div>
     );
   }
@@ -40,11 +46,21 @@ export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextArea
 export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ label, error, helperText, className = '', ...props }, ref) => {
     return (
-      <div className={`ui-form-group ${className}`}>
-        {label && <label className="ui-label">{label} {props.required && <span style={{color: 'red'}}>*</span>}</label>}
-        <textarea ref={ref} className={`ui-textarea ${error ? 'error' : ''}`} {...props} />
-        {error && <div className="ui-error-text">{error}</div>}
-        {helperText && !error && <div className="ui-helper-text">{helperText}</div>}
+      <div className={`flex flex-col gap-1.5 ${className}`}>
+        {label && (
+          <label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
+            {label} {props.required && <span className="text-red-500">*</span>}
+          </label>
+        )}
+        <textarea 
+          ref={ref} 
+          className={`w-full px-4 py-2.5 bg-white border rounded-lg text-[14px] text-[#0F172A] focus:outline-none focus:ring-2 transition-colors shadow-sm
+            ${error ? 'border-red-300 focus:ring-red-200 focus:border-red-500' : 'border-slate-200 focus:ring-[#2563EB]/20 focus:border-[#2563EB]'}
+          `} 
+          {...props} 
+        />
+        {error && <div className="text-[12px] font-medium text-red-500">{error}</div>}
+        {helperText && !error && <div className="text-[12px] text-slate-500">{helperText}</div>}
       </div>
     );
   }
@@ -57,13 +73,23 @@ export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElemen
 export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
   ({ label, error, helperText, className = '', options, ...props }, ref) => {
     return (
-      <div className={`ui-form-group ${className}`}>
-        {label && <label className="ui-label">{label} {props.required && <span style={{color: 'red'}}>*</span>}</label>}
-        <select ref={ref} className={`ui-select ${error ? 'error' : ''}`} {...props}>
+      <div className={`flex flex-col gap-1.5 ${className}`}>
+        {label && (
+          <label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
+            {label} {props.required && <span className="text-red-500">*</span>}
+          </label>
+        )}
+        <select 
+          ref={ref} 
+          className={`w-full px-4 py-2.5 bg-white border rounded-lg text-[14px] text-[#0F172A] focus:outline-none focus:ring-2 transition-colors shadow-sm appearance-none
+            ${error ? 'border-red-300 focus:ring-red-200 focus:border-red-500' : 'border-slate-200 focus:ring-[#2563EB]/20 focus:border-[#2563EB]'}
+          `} 
+          {...props}
+        >
           {options.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
         </select>
-        {error && <div className="ui-error-text">{error}</div>}
-        {helperText && !error && <div className="ui-helper-text">{helperText}</div>}
+        {error && <div className="text-[12px] font-medium text-red-500">{error}</div>}
+        {helperText && !error && <div className="text-[12px] text-slate-500">{helperText}</div>}
       </div>
     );
   }

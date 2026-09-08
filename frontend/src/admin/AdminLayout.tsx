@@ -9,14 +9,6 @@ const AdminLayout: React.FC = () => {
 
   return (
     <div className="admin-layout">
-      {/* Mobile overlay */}
-      {isSidebarOpen && (
-        <div 
-          className="admin-sidebar-overlay"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-      
       <AdminSidebar isOpen={isSidebarOpen} onClose={() => setSidebarOpen(false)} />
       
       <main className="admin-main">

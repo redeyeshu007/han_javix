@@ -1,7 +1,7 @@
 import { Database } from '../types/models';
 import { initialDb } from './defaultData';
 
-const DB_KEY = 'handoverly_db_v4';
+const DB_KEY = 'handoverly_db_v5';
 
 // Backfills arrays that didn't exist in a Database shape persisted by an earlier version
 const withDefaults = (db: Database): Database => ({

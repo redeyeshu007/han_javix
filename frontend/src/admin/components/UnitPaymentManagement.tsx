@@ -186,7 +186,7 @@ export const UnitPaymentManagement: React.FC<UnitPaymentManagementProps> = ({
                 {proofFileName && <div style={{ fontSize: '12px', color: '#64748B', marginTop: '4px' }}>Attached: {proofFileName}</div>}
               </div>
 
-              {(activeRole === 'accounts' || activeRole === 'builder_admin' || activeRole === 'super_admin') && (
+              {(activeRole === 'ACCOUNTS' || activeRole === 'BUILDER_OWNER' || activeRole === 'SUPER_ADMIN') && (
                 <div className="admin-form-group">
                   <label>Initial Status *</label>
                   <select 

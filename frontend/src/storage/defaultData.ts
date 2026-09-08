@@ -6,9 +6,7 @@ import {
 
 
 // Initial seed data - User Requested Controlled Test Data
-const initialUsers: User[] = [
-  { id: 'USR-000', name: 'Super Admin', email: 'admin@handoverly.com', phone: '', role: 'super_admin', password: 'Admin@123', status: 'Active' }
-];
+const initialUsers: User[] = [];
 
 const initialBuilders: Builder[] = [];
 const initialProjects: Project[] = [];

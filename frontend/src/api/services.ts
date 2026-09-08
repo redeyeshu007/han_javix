@@ -20,78 +20,169 @@ import { auditService as audSvc } from '../services/auditService';
 import { notificationsService as notifSvc } from '../services/notificationsService';
 import { paymentsService } from '../services/paymentsService';
 
+import { apiClient } from './client';
+
 export const usersApi = {
   getUsers: () => mockApiCall(() => usersService.getUsers()),
   createUser: (data: Omit<User, 'id' | 'status'>) => mockApiCall(() => usersService.createUser(data)),
-  updateUser: (id: string, data: Partial<User>) => mockApiCall(() => usersService.updateUser(id, data)),
+  updateUser: async (id: string, data: Partial<User>) => {
+    const response = await apiClient.patch('/accounts/me/', data);
+    return response.data;
+  },
+};
+
+export const teamApi = {
+  list: async () => (await apiClient.get('/accounts/team/')).data,
+  create: async (data: {
+    name: string; email: string; phone: string; role: string; password: string;
+    is_active: boolean; assigned_project_ids: string[];
+  }) => (await apiClient.post('/accounts/team/', data)).data,
 };
 
 export const buildersApi = {
-  getBuilders: () => mockApiCall(() => buildersService.getBuilders()),
-  createBuilder: (data: Omit<Builder, 'id' | 'joined'>) => mockApiCall(() => buildersService.createBuilder(data)),
-  updateBuilder: (id: string, data: Partial<Builder>) => mockApiCall(() => buildersService.updateBuilder(id, data)),
+  getBuilders: () => buildersService.getBuilders(),
+  createBuilder: (data: any) => buildersService.createBuilder(data),
+  updateBuilder: (id: string, data: Partial<Builder>) => buildersService.updateBuilder(id, data),
+  approveBuilder: (id: string) => buildersService.approveBuilder(id),
+  suspendBuilder: (id: string) => buildersService.suspendBuilder(id),
+  rejectBuilder: (id: string) => buildersService.rejectBuilder(id),
 };
 
 export const projectsApi = {
-  getProjects: (builderId?: string) => mockApiCall(() => projectsService.getProjects(builderId)),
-  createProject: (data: Omit<Project, 'id' | 'progress' | 'blocksCount' | 'unitsCount'>) => mockApiCall(() => projectsService.createProject(data)),
-  updateProject: (id: string, data: Partial<Project>) => mockApiCall(() => projectsService.updateProject(id, data)),
+  getProjects: async (builderId?: string) => {
+    const url = builderId ? `/projects/projects/?builder=${builderId}` : '/projects/projects/';
+    const response = await apiClient.get(url);
+    return response.data.results || response.data;
+  },
+  createProject: async (data: any) => {
+    const response = await apiClient.post('/projects/projects/', data);
+    return response.data;
+  },
+  updateProject: async (id: string, data: any) => {
+    const response = await apiClient.patch(`/projects/projects/${id}/`, data);
+    return response.data;
+  },
 };
 
 export const unitsApi = {
-  getBlocks: (projectId?: string) => mockApiCall(() => projectsService.getBlocks(projectId)),
-  createBlock: (data: Omit<Block, 'id'>) => mockApiCall(() => projectsService.createBlock(data)),
-  getFloors: (blockId?: string) => mockApiCall(() => projectsService.getFloors(blockId)),
-  createFloor: (data: Omit<Floor, 'id'>) => mockApiCall(() => projectsService.createFloor(data)),
-  getUnits: (projectId?: string) => mockApiCall(() => projectsService.getUnits(projectId)),
-  createUnit: (data: Omit<Unit, 'id' | 'customerId' | 'inspectionStatus' | 'docsCleared' | 'paymentCleared' | 'defectsCleared' | 'keysHandedOver' | 'approvalsCleared'> & { status?: 'Under Construction' | 'Ready for Inspection' }) => mockApiCall(() => projectsService.createUnit(data)),
-  updateUnit: (id: string, data: Partial<Unit>) => mockApiCall(() => projectsService.updateUnit(id, data)),
+  getBlocks: async (projectId?: string) => {
+    const url = projectId ? `/projects/blocks/?project=${projectId}` : '/projects/blocks/';
+    const response = await apiClient.get(url);
+    return response.data.results || response.data;
+  },
+  createBlock: async (data: Omit<Block, 'id'>) => {
+    const response = await apiClient.post('/projects/blocks/', data);
+    return response.data;
+  },
+  getFloors: async (blockId?: string) => {
+    const url = blockId ? `/projects/floors/?block=${blockId}` : '/projects/floors/';
+    const response = await apiClient.get(url);
+    return response.data.results || response.data;
+  },
+  createFloor: async (data: Omit<Floor, 'id'>) => {
+    const response = await apiClient.post('/projects/floors/', data);
+    return response.data;
+  },
+  getUnits: async (projectId?: string) => {
+    const url = projectId ? `/projects/units/?floor__block__project=${projectId}` : '/projects/units/';
+    const response = await apiClient.get(url);
+    return response.data.results || response.data;
+  },
+  getUnit: async (id: string | number) => {
+    const response = await apiClient.get(`/projects/units/${id}/`);
+    return response.data;
+  },
+  createUnit: async (data: any) => {
+    const response = await apiClient.post('/projects/units/', data);
+    return response.data;
+  },
+  updateUnit: async (id: string, data: Partial<Unit>) => {
+    const response = await apiClient.patch(`/projects/units/${id}/`, data);
+    return response.data;
+  },
 };
 
 export const inspectionsApi = {
-  getInspections: () => mockApiCall(() => inspectionsService.getInspections()),
-  createInspection: (data: Omit<Inspection, 'id'>) => mockApiCall(() => inspectionsService.createInspection(data)),
+  getInspections: async () => {
+    const response = await apiClient.get('/inspections/inspections/');
+    return response.data.results || response.data;
+  },
+  createInspection: async (data: Omit<Inspection, 'id'>) => {
+    const response = await apiClient.post('/inspections/inspections/', data);
+    return response.data;
+  },
 };
 
 export const customersApi = {
-  getCustomers: (builderId?: string) => mockApiCall(() => customersService.getCustomers(builderId)),
-  createCustomer: (data: Omit<Customer, 'id' | 'handoverStatus'>) => mockApiCall(() => customersService.createCustomer(data)),
-  createCustomerWithAccount: (data: Omit<Customer, 'id' | 'handoverStatus'> & { password?: string }) => mockApiCall(() => {
-    const customer = customersService.createCustomer(data);
-    usersService.createUser({
+  getCustomers: async (builderId?: string) => {
+    // Customers are currently stored as users with CUSTOMER role
+    const response = await apiClient.get('/accounts/team/');
+    const team = response.data.results || response.data;
+    return team.filter((user: any) => user.role === 'CUSTOMER');
+  },
+  createCustomer: async (data: any) => {
+    const payload = {
       name: data.name,
       email: data.email,
       phone: data.phone,
-      role: 'customer',
+      role: 'CUSTOMER',
       password: data.password || 'Customer@123',
-      builderId: data.builderId,
-      projectId: data.projectId,
-      unitId: data.unitId
-    });
-    return customer;
-  })
+      is_active: true,
+      assigned_project_ids: data.projectId ? [data.projectId] : []
+    };
+    const response = await apiClient.post('/accounts/team/', payload);
+    return response.data;
+  },
+  createCustomerWithAccount: async (data: any) => {
+    const payload = {
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      role: 'CUSTOMER',
+      password: data.password || 'Customer@123',
+      is_active: true,
+      assigned_project_ids: data.projectId ? [data.projectId] : []
+    };
+    const response = await apiClient.post('/accounts/team/', payload);
+    return response.data;
+  }
 };
 
 export const dashboardApi = {
-  getStats: () => mockApiCall(() => ({
-    stats: {
-      activeBuilders: buildersService.getBuilders().length,
-      activeProjects: projectsService.getProjects().length,
-      unitsInHandover: projectsService.getUnits().filter(u => u.status === 'Handed Over' || u.status === 'Approved').length,
-      openSupport: supportTicketsService.getSupportTickets().filter(t => t.status !== 'Resolved').length
-    },
-    recentActivity: audSvc.getAuditLogs().slice(0, 5).map(log => ({
-      title: log.action,
-      description: log.details,
-      time: log.date
-    }))
-  })),
+  getStats: async () => {
+    const builders = await buildersService.getBuilders();
+    return {
+      stats: {
+        activeBuilders: builders.length,
+        activeProjects: projectsService.getProjects().length,
+        unitsInHandover: projectsService.getUnits().filter(u => u.status === 'Handed Over' || u.status === 'Approved').length,
+        openSupport: supportTicketsService.getSupportTickets().filter(t => t.status !== 'Resolved').length
+      },
+      recentActivity: audSvc.getAuditLogs().slice(0, 5).map(log => ({
+        title: log.action,
+        description: log.details,
+        time: log.date
+      }))
+    };
+  }
 };
 
 export const defectsApi = {
-  getDefects: (projectId?: string) => mockApiCall(() => defectsService.getDefects(projectId)),
-  createDefect: (data: Omit<Defect, 'id' | 'status' | 'timeline'>) => mockApiCall(() => defectsService.createDefect(data)),
-  updateDefect: (id: string, status: Defect['status'], note: string, resolutionEvidence?: string, contractorId?: string) => mockApiCall(() => defectsService.updateDefect(id, status, note, resolutionEvidence, contractorId)),
+  getDefects: async (projectId?: string) => {
+    // If projectId is provided, we should filter by it if backend supports it, else get all
+    const response = await apiClient.get('/inspections/defects/');
+    return response.data.results || response.data;
+  },
+  createDefect: async (data: any) => {
+    const response = await apiClient.post('/inspections/defects/', data);
+    return response.data;
+  },
+  updateDefect: async (id: string, status: Defect['status'], note: string, resolutionEvidence?: string, contractorId?: string) => {
+    const payload: any = { status };
+    if (contractorId) payload.assigned_contractor = contractorId;
+    const response = await apiClient.patch(`/inspections/defects/${id}/`, payload);
+    return response.data;
+  },
 };
 
 export const contractorsApi = {
@@ -131,15 +222,17 @@ export const contractorsApi = {
 };
 
 export const checklistsApi = {
-  getChecklists: () => mockApiCall(() => checklistsService.getChecklists()),
-  createChecklist: (data: Omit<ChecklistTemplate, 'id' | 'updated'>) => mockApiCall(() => checklistsService.createChecklist(data)),
-  updateChecklist: (id: string, data: Partial<ChecklistTemplate>) => mockApiCall(() => checklistsService.updateChecklist(id, data)),
+  getChecklists: () => checklistsService.getChecklists(),
+  createChecklist: (data: Omit<ChecklistTemplate, 'id' | 'updated' | 'items'>) => checklistsService.createChecklist(data),
+  updateChecklist: (id: string, data: Partial<ChecklistTemplate>) => checklistsService.updateChecklist(id, data),
+  deleteChecklist: (id: string) => checklistsService.deleteChecklist(id),
 };
 
 export const plansApi = {
-  getPlans: () => mockApiCall(() => plansService.getPlans()),
-  createPlan: (data: Omit<Plan, 'id'>) => mockApiCall(() => plansService.createPlan(data)),
-  updatePlan: (id: string, data: Partial<Plan>) => mockApiCall(() => plansService.updatePlan(id, data)),
+  getPlans: () => plansService.getPlans(),
+  createPlan: (data: Omit<Plan, 'id'>) => plansService.createPlan(data),
+  updatePlan: (id: string, data: Partial<Plan>) => plansService.updatePlan(id, data),
+  deletePlan: (id: string) => plansService.deletePlan(id),
 };
 
 export const templatesApi = {

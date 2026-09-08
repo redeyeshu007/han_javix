@@ -1,27 +1,53 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { AlertTriangle, Search, ChevronRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { AlertTriangle, Search, Filter, Eye } from 'lucide-react';
 import { Defect, Unit } from '../../types';
 import { defectsService } from '../../services/defectsService';
-import { projectsService } from '../../services/projectsService';;
+import { projectsService } from '../../services/projectsService';
 import { useAuth } from '../../context/AuthContext';
 import { canAccessDefect } from '../../utils/access';
+import { Dropdown, DropdownItem } from '../../components/ui/Dropdown';
+import { PageLoading } from '../../components/LoadingState';
+
+const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
+  const isResolved = status === 'Resolved' || status === 'Closed';
+  const isOpen = status === 'Open';
+  const isInProgress = status === 'In Progress' || status === 'Assigned';
+  return (
+    <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border
+      ${isResolved ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : isOpen ? 'bg-red-50 text-red-700 border-red-200' : 'bg-amber-50 text-amber-700 border-amber-200'}
+    `}>
+      {isResolved && <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 mr-1.5"></span>}
+      {isOpen && <span className="w-1.5 h-1.5 rounded-full bg-red-600 mr-1.5"></span>}
+      {isInProgress && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5"></span>}
+      {status}
+    </span>
+  );
+};
 
 const DefectsList: React.FC = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [defects, setDefects] = useState<Defect[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'All' | 'Open' | 'Assigned' | 'In Progress' | 'Resolved' | 'Closed'>('All');
+  const [loading, setLoading] = useState(true);
 
   const loadDefects = () => {
     setDefects(defectsService.getDefects().filter(d => canAccessDefect(user, d)));
     setUnits(projectsService.getUnits());
+    setLoading(false);
   };
 
   useEffect(() => {
-    loadDefects();
-    const interval = setInterval(loadDefects, 2000);
+    setTimeout(() => {
+      loadDefects();
+    }, 400);
+    const interval = setInterval(() => {
+      setDefects(defectsService.getDefects().filter(d => canAccessDefect(user, d)));
+      setUnits(projectsService.getUnits());
+    }, 5000); // Polling every 5s silently without triggering loading spinner
     return () => clearInterval(interval);
   }, [user]);
 
@@ -35,131 +61,120 @@ const DefectsList: React.FC = () => {
     return matchesSearch && matchesStatus;
   });
 
+  if (loading) return <PageLoading />;
+
   return (
-    <div style={{ maxWidth: '1000px', margin: '0 auto', paddingBottom: '48px' }}>
-      
-      {/* Header */}
-      <div style={{ marginBottom: '32px' }}>
-        <h1 style={{ fontSize: '28px', fontWeight: 700, color: 'var(--admin-navy)', margin: '0' }}>Defects Snag Board</h1>
-        <p style={{ fontSize: '14px', color: 'var(--admin-text-secondary)', marginTop: '4px' }}>
-          Assign snags to partners, log rectification activities, and reinspect repairs.
-        </p>
-      </div>
-
-      {/* Toolbar & Filters */}
-      <div style={{
-        display: 'flex',
-        gap: '16px',
-        marginBottom: '24px',
-        backgroundColor: 'white',
-        padding: '16px',
-        borderRadius: '8px',
-        border: '1px solid var(--admin-border)',
-        alignItems: 'center'
-      }}>
-        {/* Search */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, border: '1px solid var(--admin-border)', borderRadius: '6px', padding: '0 12px', backgroundColor: 'var(--admin-bg)' }}>
-          <Search size={18} color="#718096" />
-          <input 
-            type="text" 
-            placeholder="Search by title, location or unit..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ border: 'none', background: 'transparent', width: '100%', padding: '8px 0', outline: 'none', color: 'var(--admin-navy)', fontSize: '14px' }}
-          />
-        </div>
-
-        {/* Status Dropdown */}
-        <div>
-          <select 
-            value={statusFilter}
-            onChange={(e: any) => setStatusFilter(e.target.value)}
-            style={{
-              padding: '8px 12px',
-              borderRadius: '6px',
-              border: '1px solid var(--admin-border)',
-              backgroundColor: 'white',
-              fontSize: '13px',
-              fontWeight: 600,
-              color: 'var(--admin-navy)',
-              outline: 'none'
-            }}
-          >
-            <option value="All">All Statuses</option>
-            <option value="Open">Open</option>
-            <option value="Assigned">Assigned</option>
-            <option value="In Progress">In Progress</option>
-            <option value="Resolved">Resolved</option>
-            <option value="Closed">Closed</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Defects List */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        {filtered.length > 0 ? (
-          filtered.map(d => {
-            const unit = units.find(u => u.id === d.unitId);
-            
-            return (
-              <div key={d.id} style={{
-                backgroundColor: 'white',
-                border: '1px solid var(--admin-border)',
-                borderRadius: '10px',
-                padding: '20px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                  <div style={{
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '8px',
-                    backgroundColor: '#FFF5F5',
-                    color: '#E53E3E',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
-                    <AlertTriangle size={20} />
-                  </div>
-                  <div>
-                    <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--admin-navy)', margin: '0 0 4px 0' }}>{d.title}</h3>
-                    <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: 'var(--admin-text-secondary)' }}>
-                      <span>Unit: <strong>{unit?.name || 'Unknown'}</strong></span>
-                      <span>Location: <strong>{d.location}</strong></span>
-                      <span>Severity: <strong style={{ color: d.severity === 'High' ? '#E53E3E' : 'inherit' }}>{d.severity}</strong></span>
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-                  <span className={`status-badge status-badge--${
-                    d.status === 'Resolved' || d.status === 'Closed' ? 'success' : 'warning'
-                  }`}>
-                    {d.status}
-                  </span>
-
-                  <Link to={`/admin/defects/${d.id}`} className="btn-secondary" style={{ padding: '8px 14px', fontSize: '12px' }}>
-                    View Snag
-                  </Link>
-
-                  <Link to={`/admin/defects/${d.id}`} style={{ display: 'flex', alignItems: 'center' }}>
-                    <ChevronRight size={20} color="var(--admin-text-secondary)" />
-                  </Link>
-                </div>
-              </div>
-            );
-          })
-        ) : (
-          <div style={{ textAlign: 'center', padding: '48px', backgroundColor: 'white', border: '1px solid var(--admin-border)', borderRadius: '12px', color: 'var(--admin-text-secondary)' }}>
-            <AlertTriangle size={36} style={{ opacity: 0.5, marginBottom: '12px' }} />
-            <h3>No defects recorded</h3>
+    <div className="bg-[#F8FAFC] min-h-screen p-4 md:p-6 lg:p-8 font-sans text-[#0F172A] w-full flex-1">
+      <div className="max-w-[1600px] mx-auto w-full">
+        
+        {/* Page Header */}
+        <section className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 mt-2">
+          <div>
+            <h1 className="text-[24px] font-bold text-[#0F172A] tracking-tight">
+              Defects Snag Board
+            </h1>
+            <p className="text-[14px] text-slate-500 mt-1 font-medium">
+              Assign snags to partners, log rectification activities, and reinspect repairs.
+            </p>
           </div>
-        )}
-      </div>
+        </section>
 
+        {/* Table Card */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+          
+          <div className="p-4 border-b border-slate-200 flex flex-col md:flex-row items-center justify-between gap-4 bg-white">
+            <div className="relative w-full max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input 
+                type="text" 
+                placeholder="Search by title, location or unit..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-4 py-1.5 bg-white border border-slate-200 rounded-md text-[13px] font-medium text-[#0F172A] placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#2563EB] focus:border-[#2563EB] transition-colors shadow-sm"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-slate-400" />
+              <select 
+                value={statusFilter}
+                onChange={(e: any) => setStatusFilter(e.target.value)}
+                className="pl-2 pr-8 py-1.5 bg-white border border-slate-200 rounded-md text-[13px] font-medium text-[#0F172A] focus:outline-none focus:ring-1 focus:ring-[#2563EB] focus:border-[#2563EB] transition-colors shadow-sm"
+              >
+                <option value="All">All Statuses</option>
+                <option value="Open">Open</option>
+                <option value="Assigned">Assigned</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Resolved">Resolved</option>
+                <option value="Closed">Closed</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto min-h-[300px]">
+            <table className="w-full text-left text-sm whitespace-nowrap">
+              <thead>
+                <tr className="bg-[#F8FAFC] border-b border-slate-200 text-slate-500 font-semibold text-[11px] uppercase tracking-wider">
+                  <th className="px-5 py-3">Snag Title</th>
+                  <th className="px-5 py-3">Location / Unit</th>
+                  <th className="px-5 py-3">Severity</th>
+                  <th className="px-5 py-3">Status</th>
+                  <th className="px-5 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filtered.map(d => {
+                  const unit = units.find(u => u.id === d.unitId);
+                  
+                  const items: DropdownItem[] = [
+                    { key: '1', label: 'View Snag', icon: <Eye size={14} />, onClick: () => navigate(`/builder/defects/${d.id}`) },
+                  ];
+
+                  return (
+                    <tr key={d.id} className="hover:bg-slate-50/50 transition-colors group">
+                      <td className="px-5 py-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-red-50 text-red-600 flex items-center justify-center">
+                            <AlertTriangle size={16} />
+                          </div>
+                          <div className="font-semibold text-[#0F172A] text-[13px]">{d.title}</div>
+                        </div>
+                      </td>
+                      <td className="px-5 py-3 text-slate-500 text-[13px]">
+                        <div className="flex flex-col gap-0.5">
+                          <span>{d.location}</span>
+                          <span className="text-[11px] text-slate-400">Unit: {unit?.name || 'Unknown'}</span>
+                        </div>
+                      </td>
+                      <td className="px-5 py-3">
+                        <span className={`text-[12px] font-semibold ${d.severity === 'High' ? 'text-red-600' : d.severity === 'Medium' ? 'text-amber-600' : 'text-slate-600'}`}>
+                          {d.severity}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3">
+                        <StatusBadge status={d.status} />
+                      </td>
+                      <td className="px-5 py-3 text-right">
+                        <Dropdown items={items} />
+                      </td>
+                    </tr>
+                  );
+                })}
+                {filtered.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-5 py-16 text-center">
+                      <div className="flex flex-col items-center justify-center text-slate-400">
+                        <AlertTriangle className="w-8 h-8 mb-3 opacity-40" />
+                        <p className="font-medium text-[#0F172A]">No defects recorded</p>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
     </div>
   );
 };

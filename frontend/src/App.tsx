@@ -37,11 +37,18 @@ const App: React.FC = () => {
   const isLogin = pathname === '/login';
   const isForgotPassword = pathname === '/forgot-password';
   const isResetPassword = pathname === '/reset-password';
-  const isAdmin = pathname.startsWith('/admin') || isLogin || isForgotPassword || isResetPassword;
+  
+  const protectedNamespaces = [
+    '/admin', '/builder', '/project-admin', '/project-manager', 
+    '/site-engineer', '/crm', '/accounts', '/contractor', 
+    '/customer', '/association'
+  ];
+  
+  const isProtectedPath = protectedNamespaces.some(ns => pathname.startsWith(ns)) || isLogin || isForgotPassword || isResetPassword;
 
   return (
     <>
-      {loading && !isAdmin && (
+      {loading && !isProtectedPath && (
         <div 
           style={{ 
             position: 'fixed', 
@@ -82,16 +89,22 @@ const App: React.FC = () => {
         </div>
       )}
       
-      {isAdmin ? (
+      {isProtectedPath ? (
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/admin/*" element={
-            <ProtectedRoute allowedRoles={['super_admin', 'builder_admin', 'project_manager', 'site_engineer', 'crm', 'accounts', 'contractor', 'customer']}>
-              <AdminApp />
-            </ProtectedRoute>
-          } />
+          
+          <Route path="/admin/*" element={<ProtectedRoute allowedRoles={['SUPER_ADMIN']}><AdminApp /></ProtectedRoute>} />
+          <Route path="/builder/*" element={<ProtectedRoute allowedRoles={['BUILDER_OWNER']}><AdminApp /></ProtectedRoute>} />
+          <Route path="/project-admin/*" element={<ProtectedRoute allowedRoles={['PROJECT_ADMIN']}><AdminApp /></ProtectedRoute>} />
+          <Route path="/project-manager/*" element={<ProtectedRoute allowedRoles={['PROJECT_MANAGER']}><AdminApp /></ProtectedRoute>} />
+          <Route path="/site-engineer/*" element={<ProtectedRoute allowedRoles={['SITE_ENGINEER']}><AdminApp /></ProtectedRoute>} />
+          <Route path="/crm/*" element={<ProtectedRoute allowedRoles={['CRM']}><AdminApp /></ProtectedRoute>} />
+          <Route path="/accounts/*" element={<ProtectedRoute allowedRoles={['ACCOUNTS']}><AdminApp /></ProtectedRoute>} />
+          <Route path="/contractor/*" element={<ProtectedRoute allowedRoles={['CONTRACTOR']}><AdminApp /></ProtectedRoute>} />
+          <Route path="/customer/*" element={<ProtectedRoute allowedRoles={['CUSTOMER']}><AdminApp /></ProtectedRoute>} />
+          <Route path="/association/*" element={<ProtectedRoute allowedRoles={['ASSOCIATION_REPRESENTATIVE']}><AdminApp /></ProtectedRoute>} />
         </Routes>
       ) : (
         isLogin ? <LoginPage /> : isServices ? <ServicesPage /> : <LandingPage />

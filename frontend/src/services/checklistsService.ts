@@ -1,29 +1,40 @@
 import { ChecklistTemplate } from '../types/models';
-import { getStore, saveStore } from '../storage/localStore';
+import { apiClient } from '../api/client';
+
+const mapBackendToChecklist = (data: any): ChecklistTemplate => ({
+  id: data.id,
+  name: data.name,
+  description: data.description,
+  category: data.category,
+  items: data.items ? data.items.length : 0,
+  status: data.status,
+  updated: data.updated_at ? new Date(data.updated_at).toISOString().split('T')[0] : '',
+});
+
+const mapChecklistToBackend = (checklist: Partial<ChecklistTemplate>): any => ({
+  name: checklist.name,
+  description: checklist.description,
+  category: checklist.category,
+  status: checklist.status,
+});
 
 export const checklistsService = {
-  getChecklists: (): ChecklistTemplate[] => getStore().checklists,
-
-  createChecklist: (checklist: Omit<ChecklistTemplate, 'id' | 'updated'>): ChecklistTemplate => {
-    const db = getStore();
-    const newChecklist: ChecklistTemplate = {
-      ...checklist,
-      id: `CHK-${String(db.checklists.length + 1).padStart(3, '0')}`,
-      updated: new Date().toISOString().split('T')[0]
-    };
-    db.checklists.push(newChecklist);
-    saveStore(db);
-    return newChecklist;
+  getChecklists: async (): Promise<ChecklistTemplate[]> => {
+    const response = await apiClient.get('/platform-admin/checklists/');
+    return response.data.map(mapBackendToChecklist);
   },
 
-  updateChecklist: (id: string, updated: Partial<ChecklistTemplate>): ChecklistTemplate => {
-    const db = getStore();
-    const idx = db.checklists.findIndex(c => c.id === id);
-    if (idx !== -1) {
-      db.checklists[idx] = { ...db.checklists[idx], ...updated, updated: new Date().toISOString().split('T')[0] };
-      saveStore(db);
-      return db.checklists[idx];
-    }
-    throw new Error('Checklist not found');
+  createChecklist: async (checklist: Omit<ChecklistTemplate, 'id' | 'updated' | 'items'>): Promise<ChecklistTemplate> => {
+    const response = await apiClient.post('/platform-admin/checklists/', mapChecklistToBackend(checklist));
+    return mapBackendToChecklist(response.data);
+  },
+
+  updateChecklist: async (id: string, updated: Partial<ChecklistTemplate>): Promise<ChecklistTemplate> => {
+    const response = await apiClient.patch(`/platform-admin/checklists/${id}/`, mapChecklistToBackend(updated));
+    return mapBackendToChecklist(response.data);
+  },
+
+  deleteChecklist: async (id: string): Promise<void> => {
+    await apiClient.delete(`/platform-admin/checklists/${id}/`);
   }
 };

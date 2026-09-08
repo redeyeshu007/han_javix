@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
+import { getDashboardRoute } from './utils/roleUtils';
 import './login.css';
 
 const LoginPage: React.FC = () => {
@@ -22,25 +23,15 @@ const LoginPage: React.FC = () => {
     try {
       const authenticatedUser = await login(email, password);
       
-      // Determine dashboard route based on role
-      let dashboardRoute = '/admin/dashboard';
+      let dashboardRoute = '/login';
       if (authenticatedUser) {
-        switch (authenticatedUser.role) {
-          case 'super_admin': dashboardRoute = '/admin/dashboard'; break;
-          case 'builder_admin': dashboardRoute = '/admin/builder-dashboard'; break;
-          case 'project_manager': dashboardRoute = '/admin/projects'; break;
-          case 'site_engineer': dashboardRoute = '/admin/inspections'; break;
-          case 'crm': dashboardRoute = '/admin/customers'; break;
-          case 'accounts': dashboardRoute = '/admin/accounts-dashboard'; break;
-          case 'contractor': dashboardRoute = '/admin/contractor-tasks'; break;
-          case 'customer': dashboardRoute = '/admin/customer-dashboard'; break;
-          default: dashboardRoute = '/admin/dashboard';
-        }
+        dashboardRoute = getDashboardRoute(authenticatedUser.role);
       }
 
       // Determine where to redirect based on role or intended destination
-      const from = (location.state as any)?.from?.pathname || dashboardRoute;
-      navigate(from, { replace: true });
+      const from = (location.state as any)?.from?.pathname;
+      const finalRoute = from && from !== '/login' ? from : dashboardRoute;
+      navigate(finalRoute, { replace: true });
     } catch (err: any) {
       if (err.message) {
         setError(err.message);

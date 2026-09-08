@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { NavLink, Link } from 'react-router-dom';
 import {
   Building2,
@@ -6,7 +6,6 @@ import {
   Users,
   CheckSquare,
   FileText,
-  LayoutTemplate,
   MessageSquare,
   Settings,
   Home,
@@ -17,10 +16,11 @@ import {
   Share2,
   FileBarChart,
   User,
-  Bell
+  Bell,
+  X
 } from 'lucide-react';
 import { useRole } from '../../context/RoleContext';
-import '../admin.css';
+import { ROLE_NAMESPACES, AppRole } from '../../utils/roleUtils';
 
 interface AdminSidebarProps {
   isOpen: boolean;
@@ -30,215 +30,208 @@ interface AdminSidebarProps {
 const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
   const { activeRole } = useRole();
 
-  // 1. Super Admin Nav
+  // Close on ESC
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
+
+  const ns = ROLE_NAMESPACES[activeRole as AppRole] || '/admin';
+
+  // Sections definition (same as before)
   const superAdminSections = [
     {
       title: 'Manage',
       items: [
-        { name: 'Builders', icon: Building2, path: '/admin/builders' },
-        { name: 'Accounts', icon: Users, path: '/admin/accounts' },
-        { name: 'Plans', icon: CreditCard, path: '/admin/plans' },
+        { name: 'Builders', icon: Building2, path: `${ns}/builders` },
+        { name: 'Plans', icon: CreditCard, path: `${ns}/plans` },
       ]
     },
     {
       title: 'Standards',
       items: [
-        { name: 'Checklists', icon: CheckSquare, path: '/admin/checklists' },
-        { name: 'Documents', icon: FileText, path: '/admin/documents' },
-        { name: 'Templates', icon: LayoutTemplate, path: '/admin/templates' },
+        { name: 'Checklists', icon: CheckSquare, path: `${ns}/checklists` },
       ]
     }
   ];
 
-  // 2. Builder Roles Nav (except contractor)
   const builderSections = [
     {
-      title: 'Project Management',
+      title: 'Manage',
       items: [
-        { name: 'Projects', icon: Briefcase, path: '/admin/projects' },
-        { name: 'Customers', icon: UserCheck, path: '/admin/customers' },
-        { name: 'Contractors', icon: Users, path: '/admin/contractors' },
+        { name: 'Projects', icon: Briefcase, path: `${ns}/projects` },
+        { name: 'Customers', icon: UserCheck, path: `${ns}/customers` },
+        { name: 'Team', icon: Users, path: `${ns}/team` },
       ]
     },
     {
-      title: 'Quality',
+      title: 'Operations',
       items: [
-        { name: 'Inspections', icon: CheckSquare, path: '/admin/inspections' },
-        { name: 'Defects', icon: FileText, path: '/admin/defects' },
+        { name: 'Inspections', icon: CheckSquare, path: `${ns}/inspections` },
+        { name: 'Defects', icon: FileText, path: `${ns}/defects` },
+        { name: 'Handover', icon: Key, path: `${ns}/handover` },
       ]
     },
     {
-      title: 'Handover',
+      title: 'Reports',
       items: [
-        { name: 'Handover Workspace', icon: Key, path: '/admin/handover' },
-        { name: 'Care / Warranty', icon: HeartHandshake, path: '/admin/care' },
-        { name: 'Association', icon: Share2, path: '/admin/association' },
-      ]
-    },
-    {
-      title: 'Management',
-      items: [
-        { name: 'Team', icon: Users, path: '/admin/team' },
-        { name: 'Reports', icon: FileBarChart, path: '/admin/reports' },
+        { name: 'Reports', icon: FileBarChart, path: `${ns}/reports` },
       ]
     }
   ];
 
-  // 3. Contractor Nav
   const contractorSections = [
     {
       title: 'Workforce',
       items: [
-        { name: 'My Tasks', icon: CheckSquare, path: '/admin/contractor-tasks' },
-        { name: 'Projects', icon: Briefcase, path: '/admin/projects' },
+        { name: 'My Tasks', icon: CheckSquare, path: `${ns}/tasks` },
+        { name: 'Projects', icon: Briefcase, path: `${ns}/projects` },
       ]
     }
   ];
 
-  // 4. Customer Nav
   const customerSections = [
     {
       title: 'My Home',
       items: [
-        { name: 'Dashboard', icon: Home, path: '/admin/customer-dashboard' },
-        { name: 'My Home', icon: Building2, path: '/admin/customer-home' },
-        { name: 'My Documents', icon: FileText, path: '/admin/customer-documents' },
-        { name: 'My Payments', icon: CreditCard, path: '/admin/customer-payments' },
+        { name: 'Dashboard', icon: Home, path: `${ns}/dashboard` },
+        { name: 'My Home', icon: Building2, path: `${ns}/unit` },
+        { name: 'My Documents', icon: FileText, path: `${ns}/documents` },
+        { name: 'My Payments', icon: CreditCard, path: `${ns}/payments` },
       ]
     },
     {
       title: 'Inspections & Issues',
       items: [
-        { name: 'My Inspection', icon: CheckSquare, path: '/admin/customer-inspection' },
-        { name: 'My Issues', icon: MessageSquare, path: '/admin/customer-issues' },
+        { name: 'My Inspection', icon: CheckSquare, path: `${ns}/inspection` },
+        { name: 'My Issues', icon: MessageSquare, path: `${ns}/defects` },
       ]
     },
     {
       title: 'Handover & Beyond',
       items: [
-        { name: 'Handover', icon: Key, path: '/admin/customer-handover' },
-        { name: 'Care / Warranty', icon: HeartHandshake, path: '/admin/customer-care' },
+        { name: 'Handover', icon: Key, path: `${ns}/handover` },
+        { name: 'Care / Warranty', icon: HeartHandshake, path: `${ns}/warranty` },
       ]
     },
     {
       title: 'Account',
       items: [
-        { name: 'Profile', icon: User, path: '/admin/customer-profile' },
-        { name: 'Notifications', icon: Bell, path: '/admin/customer-notifications' },
+        { name: 'Profile', icon: User, path: `${ns}/settings` },
+        { name: 'Notifications', icon: Bell, path: `${ns}/notifications` },
       ]
     }
   ];
 
-  // 5. Accounts Nav
   const accountsSections = [
     {
       title: 'Operations',
       items: [
-        { name: 'Projects', icon: Briefcase, path: '/admin/projects' },
-        { name: 'Customers', icon: UserCheck, path: '/admin/customers' },
+        { name: 'Clearance', icon: Briefcase, path: `${ns}/clearance` },
+        { name: 'Payments', icon: CreditCard, path: `${ns}/payments` },
       ]
     }
   ];
 
-  // Determine current links to render
-  const renderDashboardPath = activeRole === 'super_admin' ? '/admin/dashboard' : activeRole === 'customer' ? '/admin/customer-dashboard' : activeRole === 'accounts' ? '/admin/accounts-dashboard' : '/admin/builder-dashboard';
+  const renderDashboardPath = `${ns}/dashboard`;
   
   let currentSections = superAdminSections;
-  if (activeRole === 'contractor') {
+  if (activeRole === 'CONTRACTOR') {
     currentSections = contractorSections;
-  } else if (activeRole === 'customer') {
+  } else if (activeRole === 'CUSTOMER') {
     currentSections = customerSections;
-  } else if (activeRole === 'accounts') {
+  } else if (activeRole === 'ACCOUNTS') {
     currentSections = accountsSections;
-  } else if (activeRole !== 'super_admin') {
+  } else if (activeRole !== 'SUPER_ADMIN') {
     currentSections = builderSections;
   }
 
   return (
     <>
-      <aside className={`admin-sidebar ${isOpen ? 'open' : ''}`}>
-        <div className="admin-sidebar__header">
-          <Link to={renderDashboardPath} className="admin-sidebar__logo">
-            HANDOVERLY AI
+      {/* Drawer Overlay */}
+      <div 
+        className={`fixed inset-0 bg-[#0B1F33]/60 backdrop-blur-sm z-[60] transition-opacity duration-300 ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+        onClick={onClose}
+      />
+
+      {/* Sidebar Drawer */}
+      <aside 
+        className={`fixed top-0 bottom-0 left-0 w-[260px] bg-[#0B1F33] text-white z-[70] flex flex-col transform transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] shadow-[4px_0_24px_rgba(0,0,0,0.15)] border-r border-white/5 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
+      >
+        <div className="h-[72px] flex items-center justify-between px-6 border-b border-white/5">
+          <Link to={renderDashboardPath} className="font-bold text-[16px] tracking-wide text-white" onClick={onClose}>
+            HANDOVERLY <span className="text-[#3B82F6]">AI</span>
           </Link>
+          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors" aria-label="Close menu">
+            <X size={18} />
+          </button>
         </div>
         
-        <div className="admin-sidebar__content">
-          {activeRole !== 'contractor' && (
-            <div style={{ marginBottom: '20px' }}>
-              <div className="admin-sidebar__group-title" style={{ margin: '0 0 8px 12px' }}>Overview</div>
-              <nav className="admin-sidebar__nav">
+        <div className="flex-1 overflow-y-auto px-4 py-6 scrollbar-none">
+          {activeRole !== 'CONTRACTOR' && (
+            <div className="mb-6">
+              <div className="text-[11px] font-semibold text-slate-400/80 uppercase tracking-wider mb-2 px-2">Overview</div>
+              <nav className="space-y-0.5">
                 <NavLink
                   to={renderDashboardPath}
-                  className={({ isActive }) => `admin-sidebar__link ${isActive ? 'active' : ''}`}
-                  onClick={() => {
-                    if (window.innerWidth <= 1024) onClose();
-                  }}
+                  className={({ isActive }) => `flex items-center gap-3 px-3 py-2 rounded-lg text-[14px] font-medium transition-colors ${isActive ? 'bg-[#1E3A8A]/50 text-white' : 'text-slate-300 hover:text-white hover:bg-white/5'}`}
+                  onClick={onClose}
                 >
-                  <Home size={18} />
-                  Dashboard
+                  {({ isActive }) => (
+                    <>
+                      <Home size={16} className={`${isActive ? 'text-[#60A5FA]' : 'text-slate-400 group-hover:text-slate-300'} transition-colors`} />
+                      <span>Dashboard</span>
+                    </>
+                  )}
                 </NavLink>
               </nav>
             </div>
           )}
 
           {currentSections.map((section, index) => (
-            <div key={index} style={{ marginBottom: '20px' }}>
-              <div className="admin-sidebar__group-title">{section.title}</div>
-              <nav className="admin-sidebar__nav">
-                {section.items.map((item) => (
+            <div key={index} className="mb-6">
+              <div className="text-[11px] font-semibold text-slate-400/80 uppercase tracking-wider mb-2 px-2">{section.title}</div>
+              <nav className="space-y-0.5">
+                {section.items.filter((item) => item.name !== 'Team' || activeRole === 'BUILDER_OWNER').map((item) => (
                   <NavLink 
                     key={item.name} 
                     to={item.path}
-                    className={({ isActive }) => `admin-sidebar__link ${isActive ? 'active' : ''}`}
-                    onClick={() => {
-                      if (window.innerWidth <= 1024) onClose();
-                    }}
+                    className={({ isActive }) => `flex items-center gap-3 px-3 py-2 rounded-lg text-[14px] font-medium transition-colors ${isActive ? 'bg-[#1E3A8A]/50 text-white' : 'text-slate-300 hover:text-white hover:bg-white/5'}`}
+                    onClick={onClose}
                   >
-                    <item.icon size={18} />
-                    {item.name}
+                    {({ isActive }) => (
+                      <>
+                        <item.icon size={16} className={`${isActive ? 'text-[#60A5FA]' : 'text-slate-400 group-hover:text-slate-300'} transition-colors`} />
+                        <span>{item.name}</span>
+                      </>
+                    )}
                   </NavLink>
                 ))}
               </nav>
             </div>
           ))}
 
-          <div style={{ marginTop: 'auto' }}>
-            <nav className="admin-sidebar__nav">
-              {activeRole === 'super_admin' && (
-                <NavLink 
-                  to="/admin/support"
-                  className={({ isActive }) => `admin-sidebar__link ${isActive ? 'active' : ''}`}
-                  onClick={() => {
-                    if (window.innerWidth <= 1024) onClose();
-                  }}
-                >
-                  <MessageSquare size={18} />
-                  Support
-                </NavLink>
-              )}
+          <div className="mt-auto pt-6 border-t border-white/5">
+            <nav className="space-y-0.5">
               <NavLink 
-                to="/admin/settings"
-                className={({ isActive }) => `admin-sidebar__link ${isActive ? 'active' : ''}`}
-                onClick={() => {
-                  if (window.innerWidth <= 1024) onClose();
-                }}
+                to={`${ns}/settings`}
+                className={({ isActive }) => `flex items-center gap-3 px-3 py-2 rounded-lg text-[14px] font-medium transition-colors ${isActive ? 'bg-[#1E3A8A]/50 text-white' : 'text-slate-300 hover:text-white hover:bg-white/5'}`}
+                onClick={onClose}
               >
-                <Settings size={18} />
-                Settings
+                {({ isActive }) => (
+                  <>
+                    <Settings size={16} className={`${isActive ? 'text-[#60A5FA]' : 'text-slate-400 group-hover:text-slate-300'} transition-colors`} />
+                    <span>Settings</span>
+                  </>
+                )}
               </NavLink>
             </nav>
           </div>
         </div>
       </aside>
-      
-      {/* Mobile backdrop */}
-      {isOpen && (
-        <div 
-          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.4)', zIndex: 40 }}
-          onClick={onClose}
-        />
-      )}
     </>
   );
 };

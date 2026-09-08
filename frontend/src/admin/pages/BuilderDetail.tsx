@@ -1,10 +1,29 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Pause, Play } from 'lucide-react';
-import { PageHeader, StatusBadge, StatCard, AdminPanel } from '../components/AdminUI';
+import { ArrowLeft, Pause, Play, Building2, Mail, Phone, MapPin, Calendar, CreditCard, Edit2 } from 'lucide-react';
 import { buildersApi, projectsApi, usersApi, unitsApi } from '../../api/services';
-import { Builder, Project } from '../../types';;
+import { Builder, Project } from '../../types';
 import { PageLoading } from '../../components/LoadingState';
+
+// Helper component for status badges
+const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
+  const isSuspended = status === 'Suspended';
+  const isPending = status === 'Pending';
+  const isPlanning = status === 'Planning';
+  
+  return (
+    <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-semibold border uppercase tracking-wider
+      ${isSuspended ? 'bg-red-50 text-red-700 border-red-200' 
+      : isPending || isPlanning ? 'bg-amber-50 text-amber-700 border-amber-200' 
+      : 'bg-emerald-50 text-emerald-700 border-emerald-200'}
+    `}>
+      {isSuspended && <span className="w-1.5 h-1.5 rounded-full bg-red-600 mr-1.5"></span>}
+      {(isPending || isPlanning) && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5"></span>}
+      {!isSuspended && !isPending && !isPlanning && <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 mr-1.5"></span>}
+      {status}
+    </span>
+  );
+};
 
 const BuilderDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -17,6 +36,7 @@ const BuilderDetail: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [unitCount, setUnitCount] = useState(0);
   const [userCount, setUserCount] = useState(0);
+  
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState({ name: '', contact: '', email: '', phone: '', address: '' });
@@ -88,9 +108,12 @@ const BuilderDetail: React.FC = () => {
 
   if (!builder) {
     return (
-      <div style={{ textAlign: 'center', padding: '100px 0' }}>
-        <h2>Builder not found</h2>
-        <button className="btn-secondary" onClick={() => navigate('/admin/builders')} style={{ marginTop: '20px' }}>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-[#F8FAFC] text-slate-500">
+        <h2 className="text-xl font-bold text-[#0F172A] mb-4">Builder not found</h2>
+        <button 
+          className="px-4 py-2 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 text-sm font-medium transition-colors"
+          onClick={() => navigate('/admin/builders')}
+        >
           Back to Builders
         </button>
       </div>
@@ -98,156 +121,241 @@ const BuilderDetail: React.FC = () => {
   }
 
   return (
-    <div>
-      <div style={{ marginBottom: '24px' }}>
+    <div className="bg-[#F8FAFC] min-h-screen p-4 md:p-6 lg:p-8 font-sans text-[#0F172A] w-full flex-1 relative z-0">
+      <div className="absolute top-0 left-0 right-0 h-[400px] bg-gradient-to-b from-[#2563EB]/5 to-transparent -z-10 pointer-events-none" />
+
+      <div className="max-w-[1200px] mx-auto w-full">
+        
+        {/* Navigation */}
         <button
-          className="btn-secondary"
           onClick={() => navigate('/admin/builders')}
-          style={{ padding: '6px 12px', fontSize: '13px' }}
+          className="inline-flex items-center text-[13px] font-semibold text-slate-500 hover:text-[#0F172A] transition-colors mb-6 group"
         >
-          <ArrowLeft size={16} />
+          <ArrowLeft size={16} className="mr-1.5 group-hover:-translate-x-1 transition-transform" />
           Back to Builders
         </button>
-      </div>
 
-      <PageHeader
-        title={builder.name}
-        subtitle="Builder Profile"
-        action={
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <button className="btn-secondary" onClick={() => setIsEditing(true)}>
-              Edit
+        {/* Page Header */}
+        <section className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-8">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <h1 className="text-[28px] lg:text-[32px] font-bold text-[#0B1F33] tracking-tight leading-tight">
+                {builder.name}
+              </h1>
+              <StatusBadge status={builder.status} />
+            </div>
+            <p className="text-[14px] text-slate-500 font-medium flex items-center gap-2">
+              <Building2 size={16} /> Builder Profile • Joined {builder.joined}
+            </p>
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-3">
+            <button 
+              onClick={() => setIsEditing(!isEditing)}
+              className="inline-flex items-center justify-center px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-[#0F172A] text-[13px] font-semibold rounded-lg shadow-sm transition-colors"
+            >
+              <Edit2 size={16} className="mr-2 text-slate-400" />
+              {isEditing ? 'Cancel Edit' : 'Edit Profile'}
             </button>
             {builder.status === 'Suspended' ? (
-              <button className="btn-primary" onClick={handleToggleStatus} disabled={isSubmitting}>
-                <Play size={16} /> Activate
+              <button 
+                onClick={handleToggleStatus} disabled={isSubmitting}
+                className="inline-flex items-center justify-center px-4 py-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[13px] font-semibold rounded-lg shadow-sm transition-colors disabled:opacity-50"
+              >
+                <Play size={16} className="mr-2" /> Activate Account
               </button>
             ) : (
-              <button className="btn-danger" onClick={handleToggleStatus} disabled={isSubmitting}>
-                <Pause size={16} /> Suspend Account
+              <button 
+                onClick={handleToggleStatus} disabled={isSubmitting}
+                className="inline-flex items-center justify-center px-4 py-2 bg-white border border-red-200 hover:bg-red-50 text-red-600 text-[13px] font-semibold rounded-lg shadow-sm transition-colors disabled:opacity-50"
+              >
+                <Pause size={16} className="mr-2" /> Suspend Account
               </button>
             )}
           </div>
-        }
-      />
+        </section>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '24px', marginBottom: '32px' }}>
-        <StatCard title="PROJECTS" value={projects.length} />
-        <StatCard title="UNITS" value={unitCount} />
-        <StatCard title="USERS" value={userCount} />
-        <StatCard title="ACCOUNT STATUS" value={builder.status} />
-      </div>
-
-      {isEditing ? (
-        <AdminPanel title="Edit Company Information">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '480px' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--color-text-tertiary)', marginBottom: '4px' }}>Company Name</label>
-              <input className="admin-form-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--color-text-tertiary)', marginBottom: '4px' }}>Main Contact</label>
-              <input className="admin-form-input" value={form.contact} onChange={e => setForm({ ...form, contact: e.target.value })} />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--color-text-tertiary)', marginBottom: '4px' }}>Email</label>
-              <input className="admin-form-input" type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--color-text-tertiary)', marginBottom: '4px' }}>Phone</label>
-              <input className="admin-form-input" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--color-text-tertiary)', marginBottom: '4px' }}>Address</label>
-              <input className="admin-form-input" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} />
-            </div>
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-              <button className="btn-secondary" onClick={() => { setIsEditing(false); navigate(`/admin/builders/${builder.id}`, { replace: true }); }} disabled={isSubmitting}>Cancel</button>
-              <button className="btn-primary" onClick={handleSaveEdit} disabled={isSubmitting}>{isSubmitting ? 'Saving...' : 'Save Changes'}</button>
+        {/* KPI Banner */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row divide-y sm:divide-y-0 sm:divide-x divide-slate-100 mb-8 overflow-hidden">
+          <div className="flex-1 p-6 flex flex-col justify-center">
+            <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Total Projects</div>
+            <div className="text-[28px] font-bold text-[#0F172A] leading-none">{projects.length}</div>
+          </div>
+          <div className="flex-1 p-6 flex flex-col justify-center">
+            <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Total Units</div>
+            <div className="text-[28px] font-bold text-[#0F172A] leading-none">{unitCount}</div>
+          </div>
+          <div className="flex-1 p-6 flex flex-col justify-center">
+            <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Active Users</div>
+            <div className="text-[28px] font-bold text-[#0F172A] leading-none">{userCount}</div>
+          </div>
+          <div className="flex-1 p-6 flex flex-col justify-center bg-slate-50/50">
+            <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Current Plan</div>
+            <div className="text-[18px] font-bold text-[#2563EB] flex items-center gap-2 mt-1">
+              <CreditCard size={18} />
+              {builder.plan}
             </div>
           </div>
-        </AdminPanel>
-      ) : (
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-        <AdminPanel title="Company Information">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div>
-              <div style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px' }}>Registered Address</div>
-              <div style={{ fontSize: '14px', color: 'var(--color-text)' }}>{builder.address}</div>
-            </div>
-            <div>
-              <div style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px' }}>Main Contact</div>
-              <div style={{ fontSize: '14px', color: 'var(--color-text)' }}>{builder.contact}</div>
-            </div>
-            <div>
-              <div style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px' }}>Email</div>
-              <div style={{ fontSize: '14px', color: 'var(--color-text)' }}>{builder.email}</div>
-            </div>
-            <div>
-              <div style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px' }}>Business Registration</div>
-              <div style={{ fontSize: '14px', color: 'var(--color-text)' }}>{builder.brn}</div>
-            </div>
-          </div>
-        </AdminPanel>
+        </div>
 
-        <AdminPanel title="Platform Information">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div>
-              <div style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px' }}>Subscription</div>
-              <div style={{ fontSize: '14px', color: 'var(--color-navy)', fontWeight: 600 }}>{builder.plan}</div>
-            </div>
-            <div>
-              <div style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px' }}>Account Status</div>
-              <div><StatusBadge status={builder.status} /></div>
-            </div>
-            <div>
-              <div style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px' }}>Created Date</div>
-              <div style={{ fontSize: '14px', color: 'var(--color-text)' }}>{builder.joined}</div>
-            </div>
-          </div>
-        </AdminPanel>
-
-        <div style={{ gridColumn: '1 / -1' }}>
-          <AdminPanel title="Project Summary">
-            {projects.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-text-secondary)' }}>
-                No projects added yet.
+        {isEditing ? (
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mb-8 max-w-3xl">
+            <h3 className="text-[16px] font-bold text-[#0F172A] mb-6 border-b border-slate-100 pb-4">Edit Company Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="md:col-span-2">
+                <label className="block text-[12px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Company Name</label>
+                <input 
+                  className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-[14px] text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] transition-colors shadow-sm" 
+                  value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} 
+                />
               </div>
-            ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <div>
+                <label className="block text-[12px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Main Contact</label>
+                <input 
+                  className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-[14px] text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] transition-colors shadow-sm" 
+                  value={form.contact} onChange={e => setForm({ ...form, contact: e.target.value })} 
+                />
+              </div>
+              <div>
+                <label className="block text-[12px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Phone</label>
+                <input 
+                  className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-[14px] text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] transition-colors shadow-sm" 
+                  value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} 
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-[12px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Email</label>
+                <input 
+                  type="email"
+                  className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-[14px] text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] transition-colors shadow-sm" 
+                  value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} 
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-[12px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Address</label>
+                <input 
+                  className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-[14px] text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] transition-colors shadow-sm" 
+                  value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} 
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 justify-end mt-8 pt-6 border-t border-slate-100">
+              <button 
+                className="px-5 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-[#0F172A] text-[13px] font-semibold rounded-lg shadow-sm transition-colors" 
+                onClick={() => { setIsEditing(false); navigate(`/admin/builders/${builder.id}`, { replace: true }); }} 
+                disabled={isSubmitting}
+              >
+                Cancel
+              </button>
+              <button 
+                className="px-5 py-2.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[13px] font-semibold rounded-lg shadow-sm transition-colors" 
+                onClick={handleSaveEdit} 
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-full">
+              <h3 className="text-[16px] font-bold text-[#0F172A] mb-6">Company Information</h3>
+              <div className="space-y-6 flex-1">
+                <div className="flex items-start gap-3">
+                  <MapPin size={18} className="text-slate-400 mt-0.5 shrink-0" />
+                  <div>
+                    <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Registered Address</div>
+                    <div className="text-[14px] text-[#0F172A] font-medium leading-relaxed">{builder.address}</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Building2 size={18} className="text-slate-400 mt-0.5 shrink-0" />
+                  <div>
+                    <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Business Registration</div>
+                    <div className="text-[14px] text-[#0F172A] font-medium">{builder.brn}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col h-full">
+              <h3 className="text-[16px] font-bold text-[#0F172A] mb-6">Contact Details</h3>
+              <div className="space-y-6 flex-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div className="flex items-start gap-3">
+                    <Mail size={18} className="text-slate-400 mt-0.5 shrink-0" />
+                    <div className="min-w-0">
+                      <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Email Address</div>
+                      <div className="text-[14px] text-[#0F172A] font-medium truncate">{builder.email}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <Phone size={18} className="text-slate-400 mt-0.5 shrink-0" />
+                    <div>
+                      <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Phone Number</div>
+                      <div className="text-[14px] text-[#0F172A] font-medium">{builder.phone || 'N/A'}</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="pt-4 border-t border-slate-100">
+                  <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Main Contact</div>
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-200">
+                    <div className="w-6 h-6 rounded-full bg-[#2563EB]/10 text-[#2563EB] flex items-center justify-center text-[10px] font-bold">
+                      {builder.contact.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="text-[13px] font-semibold text-[#0F172A]">{builder.contact}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Project Summary Table */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col mb-12">
+          <div className="p-5 border-b border-slate-200 bg-white">
+            <h3 className="text-[16px] font-bold text-[#0F172A]">Project Summary</h3>
+          </div>
+          
+          {projects.length === 0 ? (
+            <div className="flex flex-col items-center justify-center p-12 text-slate-400">
+              <Building2 className="w-10 h-10 mb-3 opacity-40" />
+              <p className="font-medium text-[#0F172A]">No projects found</p>
+              <p className="text-sm mt-1">This builder hasn't added any projects yet.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm whitespace-nowrap">
                 <thead>
-                  <tr style={{ borderBottom: '1px solid var(--color-border)', textAlign: 'left' }}>
-                    <th style={{ padding: '12px', fontSize: '12px', color: 'var(--color-text-tertiary)', fontWeight: 600 }}>Project Name</th>
-                    <th style={{ padding: '12px', fontSize: '12px', color: 'var(--color-text-tertiary)', fontWeight: 600 }}>Units</th>
-                    <th style={{ padding: '12px', fontSize: '12px', color: 'var(--color-text-tertiary)', fontWeight: 600 }}>Status</th>
+                  <tr className="bg-[#F8FAFC] border-b border-slate-200 text-slate-500 font-semibold text-[11px] uppercase tracking-wider">
+                    <th className="px-5 py-3">Project Name</th>
+                    <th className="px-5 py-3">Units</th>
+                    <th className="px-5 py-3">Status</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-slate-100">
                   {projects.map((p) => (
-                    <tr key={p.id} style={{ borderBottom: '1px solid var(--color-border-light)' }}>
-                      <td style={{ padding: '12px', fontSize: '14px', fontWeight: 500, color: 'var(--color-navy)' }}>{p.name}</td>
-                      <td style={{ padding: '12px', fontSize: '14px', color: 'var(--color-text)' }}>{p.unitsCount}</td>
-                      <td style={{ padding: '12px' }}><StatusBadge status={p.status} /></td>
+                    <tr key={p.id} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="px-5 py-4">
+                        <div className="font-semibold text-[#0F172A] text-[13px]">{p.name}</div>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-semibold text-[12px] border border-slate-200">
+                          {p.unitsCount}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <StatusBadge status={p.status} />
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            )}
-          </AdminPanel>
+            </div>
+          )}
         </div>
+
       </div>
-      )}
-      <style>{`
-        .admin-form-input {
-          width: 100%;
-          padding: 8px 12px;
-          border-radius: 6px;
-          border: 1px solid var(--admin-border, #E2E8F0);
-          font-size: 14px;
-          outline: none;
-          font-family: inherit;
-        }
-      `}</style>
     </div>
   );
 };

@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Check, Building2, User, CreditCard, ClipboardCheck, Upload } from 'lucide-react';
+import { ArrowLeft, Check, Building2, User, CreditCard, ClipboardCheck, Upload, AlertCircle, RefreshCw } from 'lucide-react';
 import { PageHeader } from '../components/AdminUI';
-import { buildersService } from '../../services/buildersService';
-import { usersService } from '../../services/usersService';;
+import { buildersApi, usersApi, plansApi } from '../../api/services';
 import { CredentialSuccessCard } from '../../components/CredentialSuccessCard';
 import { Eye, EyeOff } from 'lucide-react';
 
@@ -32,8 +31,32 @@ const AddBuilder: React.FC = () => {
   const [confirmAdminPassword, setConfirmAdminPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [subscriptionTier, setSubscriptionTier] = useState('Professional');
+  const [subscriptionTier, setSubscriptionTier] = useState('');
+  const [subscriptionTierName, setSubscriptionTierName] = useState('');
   const [notes, setNotes] = useState('');
+  const [plans, setPlans] = useState<any[]>([]);
+  const [plansLoading, setPlansLoading] = useState(false);
+  const [plansError, setPlansError] = useState(false);
+
+  useEffect(() => {
+    if (step === 3 && plans.length === 0 && !plansError) {
+      fetchPlans();
+    }
+  }, [step]);
+
+  const fetchPlans = () => {
+    setPlansLoading(true);
+    setPlansError(false);
+    plansApi.getPlans()
+      .then(data => {
+        setPlans(data.filter(p => p.status === 'Active'));
+        setPlansLoading(false);
+      })
+      .catch(() => {
+        setPlansError(true);
+        setPlansLoading(false);
+      });
+  };
 
   const [errors, setErrors] = useState<any>({});
   
@@ -69,36 +92,35 @@ const AddBuilder: React.FC = () => {
 
   const handleNext = () => {
     if (validateStep()) {
+      if (step === 3 && !subscriptionTier) return;
       setStep(s => Math.min(s + 1, 4));
     }
   };
   
   const handleBack = () => setStep(s => Math.max(s - 1, 1));
   
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (loading) return;
     setLoading(true);
 
-    setTimeout(() => {
-      const newBuilder = buildersService.createBuilder({
+    try {
+      const newBuilder = await buildersApi.createBuilder({
         name: companyName,
         contact: adminFullName,
         email: corporateEmail,
         phone: corporatePhone,
         address: `${addressLine1}, ${city}, ${stateRegion}, ${country} ${pincode}`,
         brn: registrationNumber,
-        plan: subscriptionTier as any,
-        status: 'Active'
-      });
+        plan: subscriptionTierName,
+        subscription_plan_id: subscriptionTier,
+        status: 'Active',
+        adminEmail: adminEmail,
+        adminPassword: adminPassword,
+        adminName: adminFullName,
+        adminPhone: adminPhone
+      } as any);
 
-      usersService.createUser({
-        name: adminFullName,
-        email: adminEmail,
-        phone: adminPhone,
-        role: 'builder_admin',
-        password: adminPassword,
-        builderId: newBuilder.id
-      });
+
 
       setLoading(false);
       
@@ -109,7 +131,11 @@ const AddBuilder: React.FC = () => {
         password: adminPassword
       });
       setShowSuccessCard(true);
-    }, 800);
+    } catch (error) {
+      setLoading(false);
+      console.error('Failed to create builder', error);
+      // optionally show an error message
+    }
   };
 
   const steps = [
@@ -370,31 +396,46 @@ const AddBuilder: React.FC = () => {
                 <h3 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--admin-navy)', marginBottom: '8px' }}>Select Subscription</h3>
                 <p style={{ fontSize: '14px', color: 'var(--admin-text-secondary)', marginBottom: '32px' }}>Choose the appropriate tier for this builder.</p>
                 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
-                  {['Essential', 'Professional', 'Enterprise'].map((plan) => (
-                    <div 
-                      key={plan} 
-                      className={`plan-card ${plan === subscriptionTier ? 'selected' : ''}`}
-                      onClick={() => setSubscriptionTier(plan)}
-                    >
-                      {plan === subscriptionTier && (
-                        <div style={{ position: 'absolute', top: 16, right: 16, color: 'var(--admin-accent)' }}>
-                          <Check size={20} strokeWidth={3} />
+                {plansLoading ? (
+                  <div style={{ padding: '40px', textAlign: 'center', color: 'var(--admin-text-secondary)' }}>
+                    <RefreshCw size={24} className="animate-spin" style={{ margin: '0 auto 16px auto', color: 'var(--admin-accent)' }} />
+                    <p>Loading subscription plans...</p>
+                  </div>
+                ) : plansError ? (
+                  <div style={{ padding: '24px', textAlign: 'center', backgroundColor: '#FEF2F2', borderRadius: '12px', border: '1px solid #FECACA', color: '#B91C1C' }}>
+                    <AlertCircle size={24} style={{ margin: '0 auto 12px auto' }} />
+                    <p style={{ fontWeight: 600, marginBottom: '8px' }}>Unable to load subscription plans</p>
+                    <button type="button" onClick={fetchPlans} style={{ padding: '8px 16px', backgroundColor: 'white', border: '1px solid #FECACA', borderRadius: '6px', cursor: 'pointer', color: '#B91C1C', fontWeight: 600 }}>Retry</button>
+                  </div>
+                ) : plans.length === 0 ? (
+                  <div style={{ padding: '40px', textAlign: 'center', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px dashed var(--admin-border)', color: 'var(--admin-text-secondary)' }}>
+                    <p style={{ fontWeight: 500 }}>No subscription plans available</p>
+                  </div>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+                    {plans.map((plan) => (
+                      <div 
+                        key={plan.id} 
+                        className={`plan-card ${plan.id === subscriptionTier ? 'selected' : ''}`}
+                        onClick={() => { setSubscriptionTier(plan.id); setSubscriptionTierName(plan.name); }}
+                      >
+                        {plan.id === subscriptionTier && (
+                          <div style={{ position: 'absolute', top: 16, right: 16, color: 'var(--admin-accent)' }}>
+                            <Check size={20} strokeWidth={3} />
+                          </div>
+                        )}
+                        <h4 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--admin-navy)', margin: '0 0 12px 0' }}>{plan.name}</h4>
+                        <p style={{ fontSize: '13px', color: 'var(--admin-text-secondary)', margin: '0 0 24px 0', lineHeight: 1.5, minHeight: '60px' }}>
+                          {plan.description}
+                        </p>
+                        <div style={{ fontSize: '24px', fontWeight: 700, color: 'var(--admin-navy)' }}>
+                          ${plan.price}
+                          <span style={{ fontSize: '13px', color: 'var(--admin-text-secondary)', fontWeight: 400 }}>/{plan.billingCycle === 'Monthly' ? 'mo' : 'yr'}</span>
                         </div>
-                      )}
-                      <h4 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--admin-navy)', margin: '0 0 12px 0' }}>{plan}</h4>
-                      <p style={{ fontSize: '13px', color: 'var(--admin-text-secondary)', margin: '0 0 24px 0', lineHeight: 1.5 }}>
-                        {plan === 'Essential' ? 'Up to 5 active projects and basic reporting.' : 
-                         plan === 'Professional' ? 'Unlimited projects and advanced analytics.' : 
-                         'Custom solutions and dedicated support.'}
-                      </p>
-                      <div style={{ fontSize: '24px', fontWeight: 700, color: 'var(--admin-navy)' }}>
-                        {plan === 'Essential' ? '$199' : plan === 'Professional' ? '$499' : 'Custom'}
-                        <span style={{ fontSize: '13px', color: 'var(--admin-text-secondary)', fontWeight: 400 }}>/mo</span>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -428,7 +469,7 @@ const AddBuilder: React.FC = () => {
                     <div>
                       <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--admin-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Subscription</div>
                       <div style={{ display: 'inline-flex', alignItems: 'center', padding: '6px 12px', backgroundColor: 'var(--admin-light-blue)', color: 'var(--admin-accent)', borderRadius: '20px', fontSize: '13px', fontWeight: 600 }}>
-                        {subscriptionTier} Plan
+                        {subscriptionTierName || 'None'} Plan
                       </div>
                     </div>
                     <button type="button" style={{ background: 'transparent', border: 'none', color: 'var(--admin-accent)', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }} onClick={() => setStep(3)}>Edit</button>

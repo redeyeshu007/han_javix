@@ -1,20 +1,43 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Search, User } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Search, User, Eye, AlertCircle, Home } from 'lucide-react';
 import { Customer, Unit } from '../../types';
 import { customersService } from '../../services/customersService';
-import { projectsService } from '../../services/projectsService';;
+import { projectsService } from '../../services/projectsService';
 import { useRole } from '../../context/RoleContext';
+import { Dropdown, DropdownItem } from '../../components/ui/Dropdown';
+import { PageLoading } from '../../components/LoadingState';
+
+const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
+  const isComplete = status === 'Complete';
+  const isAccepted = status === 'Accepted';
+  return (
+    <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border
+      ${isComplete ? 'bg-slate-50 text-slate-700 border-slate-200' : isAccepted ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}
+    `}>
+      {isComplete && <span className="w-1.5 h-1.5 rounded-full bg-slate-600 mr-1.5"></span>}
+      {isAccepted && <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 mr-1.5"></span>}
+      {!isComplete && !isAccepted && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5"></span>}
+      {status}
+    </span>
+  );
+};
 
 const CustomersList: React.FC = () => {
+  const navigate = useNavigate();
   const { activeBuilderId } = useRole();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setCustomers(customersService.getCustomers(activeBuilderId));
-    setUnits(projectsService.getUnits());
+    // Simulate loading for smooth transition
+    setTimeout(() => {
+      setCustomers(customersService.getCustomers(activeBuilderId));
+      setUnits(projectsService.getUnits());
+      setLoading(false);
+    }, 400);
   }, [activeBuilderId]);
 
   const filtered = customers.filter(c => 
@@ -22,106 +45,114 @@ const CustomersList: React.FC = () => {
     c.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  if (loading) return <PageLoading />;
+
   return (
-    <div style={{ maxWidth: '1000px', margin: '0 auto', paddingBottom: '48px' }}>
-      
-      {/* Header */}
-      <div style={{ marginBottom: '32px' }}>
-        <h1 style={{ fontSize: '28px', fontWeight: 700, color: 'var(--admin-navy)', margin: '0' }}>Customers</h1>
-        <p style={{ fontSize: '14px', color: 'var(--admin-text-secondary)', marginTop: '4px' }}>
-          Directories of homebuyers, contract associations, and key handovers.
-        </p>
-      </div>
-
-      {/* Toolbar */}
-      <div style={{
-        display: 'flex',
-        gap: '16px',
-        marginBottom: '24px',
-        backgroundColor: 'white',
-        padding: '16px',
-        borderRadius: '8px',
-        border: '1px solid var(--admin-border)'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, border: '1px solid var(--admin-border)', borderRadius: '6px', padding: '0 12px', backgroundColor: 'var(--admin-bg)' }}>
-          <Search size={18} color="#718096" />
-          <input 
-            type="text" 
-            placeholder="Search customers..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ border: 'none', background: 'transparent', width: '100%', padding: '8px 0', outline: 'none', color: 'var(--admin-navy)', fontSize: '14px' }}
-          />
-        </div>
-      </div>
-
-      {/* List */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        {filtered.length > 0 ? (
-          filtered.map(c => {
-            const unit = units.find(u => u.id === c.unitId);
-            
-            return (
-              <div key={c.id} style={{
-                backgroundColor: 'white',
-                border: '1px solid var(--admin-border)',
-                borderRadius: '10px',
-                padding: '20px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                  <div style={{
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '50%',
-                    backgroundColor: 'var(--admin-light-blue)',
-                    color: 'var(--admin-accent)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 700
-                  }}>
-                    {c.name.split(' ').map(n => n[0]).join('')}
-                  </div>
-                  <div>
-                    <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--admin-navy)', margin: '0 0 4px 0' }}>{c.name}</h3>
-                    <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: 'var(--admin-text-secondary)' }}>
-                      <span>Email: <strong>{c.email}</strong></span>
-                      <span>Phone: <strong>{c.phone}</strong></span>
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-                  {unit ? (
-                    <Link to={`/admin/units/${unit.id}`} style={{ textDecoration: 'none' }}>
-                      <div style={{ padding: '6px 12px', border: '1px solid var(--admin-border)', borderRadius: '6px', fontSize: '12px', fontWeight: 600, color: 'var(--admin-accent)', backgroundColor: '#FAFCFF' }}>
-                        Unit {unit.name}
-                      </div>
-                    </Link>
-                  ) : (
-                    <span style={{ fontSize: '12px', color: 'var(--admin-text-secondary)' }}>No Unit Assigned</span>
-                  )}
-
-                  <span className={`status-badge status-badge--${
-                    c.handoverStatus === 'Complete' ? 'neutral' : c.handoverStatus === 'Accepted' ? 'success' : 'warning'
-                  }`}>
-                    {c.handoverStatus}
-                  </span>
-                </div>
-              </div>
-            );
-          })
-        ) : (
-          <div style={{ textAlign: 'center', padding: '48px', backgroundColor: 'white', border: '1px solid var(--admin-border)', borderRadius: '12px', color: 'var(--admin-text-secondary)' }}>
-            <User size={36} style={{ opacity: 0.5, marginBottom: '12px' }} />
-            <h3>No customers found</h3>
+    <div className="bg-[#F8FAFC] min-h-screen p-4 md:p-6 lg:p-8 font-sans text-[#0F172A] w-full flex-1">
+      <div className="max-w-[1600px] mx-auto w-full">
+        
+        {/* Page Header */}
+        <section className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 mt-2">
+          <div>
+            <h1 className="text-[24px] font-bold text-[#0F172A] tracking-tight">
+              Customers
+            </h1>
+            <p className="text-[14px] text-slate-500 mt-1 font-medium">
+              Directories of homebuyers, contract associations, and key handovers.
+            </p>
           </div>
-        )}
-      </div>
+        </section>
 
+        {/* Table Card */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+          
+          {/* Table Header/Toolbar */}
+          <div className="p-4 border-b border-slate-200 flex flex-col md:flex-row items-center justify-between gap-4 bg-white">
+            <div className="relative w-full max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input 
+                type="text" 
+                placeholder="Search customers..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-4 py-1.5 bg-white border border-slate-200 rounded-md text-[13px] font-medium text-[#0F172A] placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#2563EB] focus:border-[#2563EB] transition-colors shadow-sm"
+              />
+            </div>
+          </div>
+
+          <div className="overflow-x-auto min-h-[300px]">
+            <table className="w-full text-left text-sm whitespace-nowrap">
+              <thead>
+                <tr className="bg-[#F8FAFC] border-b border-slate-200 text-slate-500 font-semibold text-[11px] uppercase tracking-wider">
+                  <th className="px-5 py-3">Customer</th>
+                  <th className="px-5 py-3">Contact</th>
+                  <th className="px-5 py-3">Assigned Unit</th>
+                  <th className="px-5 py-3">Handover Status</th>
+                  <th className="px-5 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filtered.map(c => {
+                  const unit = units.find(u => u.id === c.unitId);
+                  
+                  const items: DropdownItem[] = [
+                    { key: '1', label: 'View Profile', icon: <Eye size={14} />, onClick: () => navigate(`/builder/customers/${c.id}`) },
+                  ];
+
+                  return (
+                    <tr key={c.id} className="hover:bg-slate-50/50 transition-colors group">
+                      <td className="px-5 py-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-[11px]">
+                            {c.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
+                          </div>
+                          <div className="font-semibold text-[#0F172A] text-[13px]">{c.name}</div>
+                        </div>
+                      </td>
+                      <td className="px-5 py-3 text-slate-500 text-[13px]">
+                        <div className="flex flex-col gap-0.5">
+                          <span>{c.email}</span>
+                          <span className="text-[11px] text-slate-400">{c.phone}</span>
+                        </div>
+                      </td>
+                      <td className="px-5 py-3">
+                        {unit ? (
+                          <div 
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 font-semibold text-[12px] border border-blue-100 cursor-pointer hover:bg-blue-100 transition-colors"
+                            onClick={() => navigate(`/builder/units/${unit.id}`)}
+                          >
+                            <Home size={12} /> Unit {unit.name}
+                          </div>
+                        ) : (
+                          <span className="text-slate-400 text-[12px] italic">Unassigned</span>
+                        )}
+                      </td>
+                      <td className="px-5 py-3">
+                        <StatusBadge status={c.handoverStatus} />
+                      </td>
+                      <td className="px-5 py-3 text-right">
+                        <Dropdown items={items} />
+                      </td>
+                    </tr>
+                  );
+                })}
+                {filtered.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-5 py-16 text-center">
+                      <div className="flex flex-col items-center justify-center text-slate-400">
+                        <User className="w-8 h-8 mb-3 opacity-40" />
+                        <p className="font-medium text-[#0F172A]">No customers found</p>
+                        <p className="text-sm mt-1">Customers will appear here once onboarded.</p>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
     </div>
   );
 };

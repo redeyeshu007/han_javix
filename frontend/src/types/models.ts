@@ -9,6 +9,7 @@ export interface User {
   role: 'super_admin' | 'builder_admin' | 'project_manager' | 'site_engineer' | 'crm' | 'accounts' | 'contractor' | 'customer';
   password: string;
   builderId?: string;
+  builder_company_name?: string;
   projectId?: string;
   unitId?: string;
   assignedProjectIds?: string[]; // project_manager / site_engineer / crm / accounts scoping
@@ -40,8 +41,9 @@ export interface Builder {
   phone: string;
   address: string;
   brn: string;
-  plan: 'Starter' | 'Professional' | 'Enterprise';
-  status: 'Active' | 'Pending' | 'Suspended';
+  plan: string;
+  subscription_plan_id?: string;
+  status: 'Pending' | 'Active' | 'Suspended';
   joined: string;
 }
 

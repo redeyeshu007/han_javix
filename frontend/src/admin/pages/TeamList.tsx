@@ -1,627 +1,118 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Plus } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Plus, Search } from 'lucide-react';
+import { projectsApi, teamApi } from '../../api/services';
 import { useRole } from '../../context/RoleContext';
-import { User } from '../../types';
-import { usersService } from '../../services/usersService';;
-import { projectsApi } from '../../api/services';
-import { CredentialSuccessCard } from '../../components/CredentialSuccessCard';
+import { Modal } from '../../components/ui/Modal';
+import { Button } from '../../components/ui/Button';
 import { MultiSelect } from '../../components/ui/MultiSelect';
-import { Eye, EyeOff } from 'lucide-react';
+import { PageLoading } from '../../components/LoadingState';
 
-interface Member {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  role: string;
-  phone: string;
-  status: string;
-  assignedProjectIds?: string[];
-}
+const roles = [
+  ['PROJECT_ADMIN', 'Project Admin'],
+  ['PROJECT_MANAGER', 'Project Manager'],
+  ['SITE_ENGINEER', 'Site Engineer'],
+  ['CRM', 'CRM'],
+  ['ACCOUNTS', 'Accounts'],
+  ['CONTRACTOR', 'Contractor / Vendor'],
+] as const;
+
+type Member = {
+  id: string; full_name: string; email: string; phone: string; role: string;
+  is_active: boolean; assigned_project_ids: string[];
+};
+
+const roleLabel = (role: string) => roles.find(([value]) => value === role)?.[1] || role;
 
 const TeamList: React.FC = () => {
-  const { activeRole, activeBuilderId } = useRole();
-  const [searchTerm, setSearchTerm] = useState('');
-  
+  const { activeRole } = useRole();
   const [members, setMembers] = useState<Member[]>([]);
-  const [allProjects, setAllProjects] = useState<{ id: string; name: string }[]>([]);
+  const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [open, setOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [form, setForm] = useState({
+    name: '', email: '', phone: '', role: 'PROJECT_ADMIN', password: '',
+    is_active: true, assigned_project_ids: [] as string[],
+  });
 
-  useEffect(() => {
-    projectsApi.getProjects(activeBuilderId).then((data: any) => setAllProjects(data.map((p: any) => ({ id: p.id, name: p.name }))));
-  }, [activeBuilderId]);
-
-  useEffect(() => {
-    // Load members from mockDb instead of static state
-    const allUsers = usersService.getUsers();
-
-    // Filter for team roles within this builder only (exclude super_admin, customer, contractor)
-    const teamUsers = allUsers.filter(u =>
-      ['builder_admin', 'project_manager', 'site_engineer', 'crm', 'accounts'].includes(u.role) &&
-      u.builderId === activeBuilderId
-    );
-    
-    const mappedMembers: Member[] = teamUsers.map(u => {
-      // Map system role back to UI role
-      let uiRole = 'Admin';
-      if (u.role === 'project_manager') uiRole = 'Project Manager';
-      if (u.role === 'site_engineer') uiRole = 'Site Engineer';
-      if (u.role === 'crm') uiRole = 'CRM';
-      if (u.role === 'accounts') uiRole = 'Accounts';
-      
-      const parts = u.name.split(' ');
-      
-      return {
-        id: u.id,
-        firstName: parts[0] || '',
-        lastName: parts.slice(1).join(' ') || '',
-        email: u.email,
-        role: uiRole,
-        phone: u.phone,
-        status: u.status,
-        assignedProjectIds: u.assignedProjectIds || []
-      };
-    });
-    
-    setMembers(mappedMembers);
-  }, [activeBuilderId]);
-
-  const [showAddMember, setShowAddMember] = useState(false);
-  const [showEditMember, setShowEditMember] = useState(false);
-  const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
-  
-  // Form fields
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [role, setRole] = useState('Project Manager');
-  const [assignedProjectIds, setAssignedProjectIds] = useState<string[]>([]);
-  const [status, setStatus] = useState('Active');
-  
-  const [errors, setErrors] = useState<any>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // Password fields
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  
-  // Credential Card state
-  const [showSuccessCard, setShowSuccessCard] = useState(false);
-  const [newlyCreatedMember, setNewlyCreatedMember] = useState<{name: string, role: string, email: string, password?: string} | null>(null);
-
-  const handleAddMember = (e: React.FormEvent) => {
-    e.preventDefault();
-    const newErrors: any = {};
-    if (!firstName.trim()) newErrors.firstName = 'Required';
-    if (!lastName.trim()) newErrors.lastName = 'Required';
-    if (!email.trim()) newErrors.email = 'Required';
-    
-    // Duplicate email check
-    if (members.some(m => m.email.toLowerCase() === email.toLowerCase().trim())) {
-      newErrors.email = 'This email is already associated with an account.';
+  const load = async () => {
+    setLoading(true);
+    try {
+      const [team, builderProjects] = await Promise.all([teamApi.list(), projectsApi.getProjects()]);
+      setMembers(team);
+      setProjects(builderProjects.map((project: any) => ({ id: String(project.id), name: project.name })));
+    } catch {
+      setError('Unable to load team members.');
+    } finally {
+      setLoading(false);
     }
+  };
 
-    if (role !== 'Admin' && assignedProjectIds.length === 0) newErrors.assignedProjectIds = 'Select at least one project.';
-    if (!password) newErrors.password = 'Required';
-    if (!confirmPassword) newErrors.confirmPassword = 'Required';
-    if (password && confirmPassword && password !== confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match.';
+  useEffect(() => { load(); }, []);
+
+  const requiresProjects = form.role !== 'PROJECT_ADMIN';
+  const createMember = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setError('');
+    if (!form.name.trim() || !form.email.trim() || !form.password) {
+      setError('Name, email, and password are required.');
+      return;
     }
-    
-    setErrors(newErrors);
-    if (Object.keys(newErrors).length > 0) return;
-
-    setIsSubmitting(true);
-    setTimeout(() => {
-      // Map UI role to system role
-      let systemRole: User['role'] = 'builder_admin';
-      switch (role) {
-        case 'Project Manager': systemRole = 'project_manager'; break;
-        case 'Site Engineer': systemRole = 'site_engineer'; break;
-        case 'CRM': systemRole = 'crm'; break;
-        case 'Accounts': systemRole = 'accounts'; break;
-        case 'Admin': systemRole = 'builder_admin'; break;
-      }
-
-      try {
-        const newUser = usersService.createUser({
-          name: `${firstName} ${lastName}`,
-          email,
-          phone,
-          role: systemRole,
-          password: password,
-          builderId: activeBuilderId, // associate with current builder
-          assignedProjectIds: systemRole === 'builder_admin' ? undefined : assignedProjectIds
-        });
-
-        const newM: Member = {
-          id: newUser.id,
-          firstName,
-          lastName,
-          email,
-          role,
-          phone,
-          status,
-          assignedProjectIds: systemRole === 'builder_admin' ? [] : assignedProjectIds
-        };
-
-        setMembers([...members, newM]);
-        
-        setNewlyCreatedMember({
-          name: `${firstName} ${lastName}`,
-          role: role,
-          email: email,
-          password: password
-        });
-        setShowSuccessCard(true);
-
-        setFirstName('');
-        setLastName('');
-        setEmail('');
-        setPhone('');
-        setRole('Project Manager');
-        setAssignedProjectIds([]);
-        setStatus('Active');
-        setPassword('');
-        setConfirmPassword('');
-        setShowAddMember(false);
-      } catch (err) {
-        setErrors({ email: 'Failed to create user.' });
-      } finally {
-        setIsSubmitting(false);
-      }
-    }, 500);
+    if (requiresProjects && !form.assigned_project_ids.length) {
+      setError('Select at least one assigned project for this role.');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const member = await teamApi.create({
+        ...form,
+        assigned_project_ids: requiresProjects ? form.assigned_project_ids : [],
+      });
+      setMembers((current) => [...current, member]);
+      setForm({ name: '', email: '', phone: '', role: 'PROJECT_ADMIN', password: '', is_active: true, assigned_project_ids: [] });
+      setOpen(false);
+    } catch (requestError: any) {
+      const data = requestError.response?.data;
+      setError(typeof data === 'object' ? Object.values(data).flat().join(' ') : 'Unable to create team member.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const filtered = members.filter(m => 
-    `${m.firstName} ${m.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    m.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  if (loading) return <PageLoading />;
+  const filtered = members.filter((member) => `${member.full_name} ${member.email}`.toLowerCase().includes(search.toLowerCase()));
+  const canManageTeam = activeRole === 'BUILDER_OWNER';
 
-  const openEditModal = (m: Member) => {
-    setEditingMemberId(m.id);
-    setFirstName(m.firstName);
-    setLastName(m.lastName);
-    setEmail(m.email); // Keep it read-only mostly but populated
-    setPhone(m.phone);
-    setRole(m.role);
-    setAssignedProjectIds(m.assignedProjectIds || []);
-    setStatus(m.status);
-    setErrors({});
-    setShowEditMember(true);
-  };
-
-  const handleEditMember = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingMemberId) return;
-    
-    const newErrors: any = {};
-    if (!firstName.trim()) newErrors.firstName = 'Required';
-    if (!lastName.trim()) newErrors.lastName = 'Required';
-    if (role !== 'Admin' && assignedProjectIds.length === 0) newErrors.assignedProjectIds = 'Select at least one project.';
-    
-    setErrors(newErrors);
-    if (Object.keys(newErrors).length > 0) return;
-
-    setIsSubmitting(true);
-    setTimeout(() => {
-      let systemRole: User['role'] = 'builder_admin';
-      switch (role) {
-        case 'Project Manager': systemRole = 'project_manager'; break;
-        case 'Site Engineer': systemRole = 'site_engineer'; break;
-        case 'CRM': systemRole = 'crm'; break;
-        case 'Accounts': systemRole = 'accounts'; break;
-        case 'Admin': systemRole = 'builder_admin'; break;
-      }
-
-      try {
-        const userToUpdate = usersService.getUsers().find(u => u.id === editingMemberId);
-        if (userToUpdate) {
-          const updatedUser = {
-            ...userToUpdate,
-            name: `${firstName} ${lastName}`,
-            phone,
-            role: systemRole,
-            status,
-            assignedProjectIds: systemRole === 'builder_admin' ? undefined : assignedProjectIds
-          };
-          // Directly update in localStorage for simplicity in this mock
-          const db = JSON.parse(localStorage.getItem('handoverly_db_v4') || '{}');
-          const userIndex = db.users.findIndex((u: User) => u.id === editingMemberId);
-          if (userIndex !== -1) {
-            db.users[userIndex] = updatedUser;
-            localStorage.setItem('handoverly_db_v4', JSON.stringify(db));
-          }
-        }
-        
-        // Update local state
-        setMembers(members.map(m => m.id === editingMemberId ? {
-          ...m,
-          firstName,
-          lastName,
-          phone,
-          role,
-          status,
-          assignedProjectIds: systemRole === 'builder_admin' ? [] : assignedProjectIds
-        } : m));
-
-        setShowEditMember(false);
-      } catch (err) {
-        console.error("Failed to update user", err);
-      } finally {
-        setIsSubmitting(false);
-      }
-    }, 500);
-  };
-
-  return (
-    <div style={{ maxWidth: '1000px', margin: '0 auto', paddingBottom: '48px' }}>
-      
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-        <div>
-          <h1 style={{ fontSize: '28px', fontWeight: 700, color: 'var(--admin-navy)', margin: '0' }}>Team Directory</h1>
-          <p style={{ fontSize: '14px', color: 'var(--admin-text-secondary)', marginTop: '4px' }}>
-            Manage organization members, engineer credentials, and operational permissions.
-          </p>
-        </div>
-        {(activeRole === 'builder_admin' || activeRole === 'super_admin') && (
-          <button className="btn-primary" onClick={() => setShowAddMember(true)}>
-            <Plus size={16} /> Invite Member
-          </button>
-        )}
+  return <div className="bg-[#F8FAFC] min-h-screen p-4 md:p-8 text-[#0F172A]">
+    <div className="max-w-6xl mx-auto">
+      <div className="flex flex-col sm:flex-row justify-between gap-4 mb-8">
+        <div><h1 className="text-2xl font-bold">Team Directory</h1><p className="text-slate-500 mt-1">Create and manage Django-backed builder accounts.</p></div>
+        {canManageTeam && <Button onClick={() => { setError(''); setOpen(true); }}><Plus size={16} /> Add Team Member</Button>}
       </div>
-
-      {/* Toolbar */}
-      <div style={{
-        display: 'flex',
-        gap: '16px',
-        marginBottom: '24px',
-        backgroundColor: 'white',
-        padding: '16px',
-        borderRadius: '8px',
-        border: '1px solid var(--admin-border)'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, border: '1px solid var(--admin-border)', borderRadius: '6px', padding: '0 12px', backgroundColor: 'var(--admin-bg)' }}>
-          <Search size={18} color="#718096" />
-          <input 
-            type="text" 
-            placeholder="Search team members..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ border: 'none', background: 'transparent', width: '100%', padding: '8px 0', outline: 'none', color: 'var(--admin-navy)', fontSize: '14px' }}
-          />
-        </div>
+      {error && !open && <p className="mb-4 text-sm text-red-600">{error}</p>}
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <div className="p-4 border-b"><div className="relative max-w-md"><Search size={16} className="absolute left-3 top-3 text-slate-400" /><input className="w-full pl-9 p-2 border rounded-md" placeholder="Search team members" value={search} onChange={(e) => setSearch(e.target.value)} /></div></div>
+        <table className="w-full text-left"><thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr><th className="p-4">Member</th><th>Contact</th><th>Role</th><th>Status</th></tr></thead><tbody>
+          {filtered.map((member) => <tr key={member.id} className="border-t"><td className="p-4 font-medium">{member.full_name}</td><td>{member.email}{member.phone && <div className="text-sm text-slate-500">{member.phone}</div>}</td><td>{roleLabel(member.role)}</td><td>{member.is_active ? 'Active' : 'Inactive'}</td></tr>)}
+          {!filtered.length && <tr><td className="p-8 text-center text-slate-500" colSpan={4}>No team members found.</td></tr>}
+        </tbody></table>
       </div>
-
-      {/* Grid */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        {filtered.map(m => (
-          <div key={m.id} style={{
-            backgroundColor: 'white',
-            border: '1px solid var(--admin-border)',
-            borderRadius: '10px',
-            padding: '20px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '50%',
-                backgroundColor: 'var(--admin-light-blue)',
-                color: 'var(--admin-accent)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 700
-              }}>
-                {m.firstName[0]}{m.lastName[0]}
-              </div>
-              <div>
-                <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--admin-navy)', margin: '0 0 4px 0' }}>{m.firstName} {m.lastName}</h3>
-                <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: 'var(--admin-text-secondary)' }}>
-                  <span>Email: <strong>{m.email}</strong></span>
-                  <span>Phone: <strong>{m.phone}</strong></span>
-                </div>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <span className={`status-badge status-badge--${m.status === 'Active' ? 'success' : 'default'}`} style={{ fontWeight: 600 }}>
-                {m.role}
-              </span>
-              <span style={{ fontSize: '12px', color: m.status === 'Active' ? '#059669' : '#6B7280', fontWeight: 500 }}>
-                {m.status}
-              </span>
-              {(activeRole === 'builder_admin' || activeRole === 'super_admin') && (
-                <button 
-                  className="btn-secondary" 
-                  style={{ padding: '6px 12px', fontSize: '12px' }}
-                  onClick={() => openEditModal(m)}
-                >
-                  Edit
-                </button>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Invite Modal */}
-      {showAddMember && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(7, 26, 51, 0.4)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000
-        }}>
-          <div style={{
-            backgroundColor: 'white',
-            borderRadius: '16px',
-            padding: '32px',
-            width: '100%',
-            maxWidth: '440px',
-            boxShadow: '0 10px 25px rgba(7, 26, 51, 0.15)'
-          }}>
-            <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--admin-navy)', marginBottom: '16px' }}>Invite Team Member</h3>
-            <form onSubmit={handleAddMember} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <div>
-                  <label className="admin-form-label">First Name *</label>
-                  <input type="text" className={`admin-form-input ${errors.firstName ? 'error' : ''}`} value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="e.g. John" />
-                </div>
-                <div>
-                  <label className="admin-form-label">Last Name *</label>
-                  <input type="text" className={`admin-form-input ${errors.lastName ? 'error' : ''}`} value={lastName} onChange={e => setLastName(e.target.value)} placeholder="e.g. Doe" />
-                </div>
-              </div>
-              
-              <div>
-                <label className="admin-form-label">Email Address *</label>
-                <input type="email" className={`admin-form-input ${errors.email ? 'error' : ''}`} value={email} onChange={e => setEmail(e.target.value)} placeholder="e.g. john@company.com" />
-              </div>
-
-              <div>
-                <label className="admin-form-label">Phone Number</label>
-                <input type="tel" className="admin-form-input" value={phone} onChange={e => setPhone(e.target.value)} placeholder="e.g. +1 555-0100" />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <div>
-                  <label className="admin-form-label">Role *</label>
-                  <select className="admin-form-input" style={{ backgroundColor: 'white' }} value={role} onChange={e => setRole(e.target.value)}>
-                    <option value="Project Manager">Project Manager</option>
-                    <option value="Site Engineer">Site Engineer</option>
-                    <option value="CRM">CRM</option>
-                    <option value="Accounts">Accounts</option>
-                    <option value="Admin">Builder Admin</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="admin-form-label">Status *</label>
-                  <select className="admin-form-input" style={{ backgroundColor: 'white' }} value={status} onChange={e => setStatus(e.target.value)}>
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                  </select>
-                </div>
-              </div>
-
-              {role !== 'Admin' && (
-                <div>
-                  <MultiSelect
-                    label="Assigned Projects"
-                    required
-                    options={allProjects.map(p => ({ id: p.id, label: p.name }))}
-                    value={assignedProjectIds}
-                    onChange={setAssignedProjectIds}
-                    placeholder="Select projects"
-                    error={errors.assignedProjectIds}
-                    emptyMessage="No projects found for this builder."
-                  />
-                </div>
-              )}
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <div>
-                  <label className="admin-form-label">Password *</label>
-                  <div style={{ position: 'relative' }}>
-                    <input 
-                      type={showPassword ? "text" : "password"} 
-                      className={`admin-form-input ${errors.password ? 'error' : ''}`} 
-                      value={password} 
-                      onChange={e => setPassword(e.target.value)} 
-                      placeholder="e.g. SecretPassword123!" 
-                      style={{ paddingRight: '40px' }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      aria-label={showPassword ? 'Hide password' : 'Show password'}
-                      style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--admin-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-                    >
-                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                  {errors.password && <div style={{ color: '#DC2626', fontSize: '12px', marginTop: '4px' }}>{errors.password}</div>}
-                </div>
-
-                <div>
-                  <label className="admin-form-label">Confirm Password *</label>
-                  <div style={{ position: 'relative' }}>
-                    <input 
-                      type={showConfirmPassword ? "text" : "password"} 
-                      className={`admin-form-input ${errors.confirmPassword ? 'error' : ''}`} 
-                      value={confirmPassword} 
-                      onChange={e => setConfirmPassword(e.target.value)} 
-                      placeholder="e.g. SecretPassword123!" 
-                      style={{ paddingRight: '40px' }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
-                      style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--admin-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-                    >
-                      {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                  {errors.confirmPassword && <div style={{ color: '#DC2626', fontSize: '12px', marginTop: '4px' }}>{errors.confirmPassword}</div>}
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
-                <button type="button" className="btn-secondary" onClick={() => setShowAddMember(false)} disabled={isSubmitting}>Cancel</button>
-                <button type="submit" className="btn-primary" disabled={isSubmitting}>{isSubmitting ? 'Sending...' : 'Send Invitation'}</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-
-      {showSuccessCard && newlyCreatedMember && (
-        <CredentialSuccessCard 
-          name={newlyCreatedMember.name}
-          role={newlyCreatedMember.role}
-          email={newlyCreatedMember.email}
-          password={newlyCreatedMember.password}
-          onClose={() => {
-            setShowSuccessCard(false);
-            setNewlyCreatedMember(null);
-          }}
-        />
-      )}
-
-      {/* Edit Modal */}
-      {showEditMember && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(7, 26, 51, 0.4)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000
-        }}>
-          <div style={{
-            backgroundColor: 'white',
-            borderRadius: '16px',
-            padding: '32px',
-            width: '100%',
-            maxWidth: '440px',
-            boxShadow: '0 10px 25px rgba(7, 26, 51, 0.15)'
-          }}>
-            <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--admin-navy)', marginBottom: '16px' }}>Edit Team Member</h3>
-            <form onSubmit={handleEditMember} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <div>
-                  <label className="admin-form-label">First Name *</label>
-                  <input type="text" className={`admin-form-input ${errors.firstName ? 'error' : ''}`} value={firstName} onChange={e => setFirstName(e.target.value)} />
-                </div>
-                <div>
-                  <label className="admin-form-label">Last Name *</label>
-                  <input type="text" className={`admin-form-input ${errors.lastName ? 'error' : ''}`} value={lastName} onChange={e => setLastName(e.target.value)} />
-                </div>
-              </div>
-              
-              <div>
-                <label className="admin-form-label">Email Address (Read-only)</label>
-                <input type="email" className="admin-form-input" value={email} disabled style={{ backgroundColor: '#F3F4F6' }} />
-              </div>
-
-              <div>
-                <label className="admin-form-label">Phone Number</label>
-                <input type="tel" className="admin-form-input" value={phone} onChange={e => setPhone(e.target.value)} />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <div>
-                  <label className="admin-form-label">Role *</label>
-                  <select className="admin-form-input" style={{ backgroundColor: 'white' }} value={role} onChange={e => setRole(e.target.value)}>
-                    <option value="Project Manager">Project Manager</option>
-                    <option value="Site Engineer">Site Engineer</option>
-                    <option value="CRM">CRM</option>
-                    <option value="Accounts">Accounts</option>
-                    <option value="Admin">Builder Admin</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="admin-form-label">Status *</label>
-                  <select className="admin-form-input" style={{ backgroundColor: 'white' }} value={status} onChange={e => setStatus(e.target.value)}>
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                  </select>
-                </div>
-              </div>
-
-              {role !== 'Admin' && (
-                <div>
-                  <MultiSelect
-                    label="Assigned Projects"
-                    required
-                    options={allProjects.map(p => ({ id: p.id, label: p.name }))}
-                    value={assignedProjectIds}
-                    onChange={setAssignedProjectIds}
-                    placeholder="Select projects"
-                    error={errors.assignedProjectIds}
-                    emptyMessage="No projects found for this builder."
-                  />
-                </div>
-              )}
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
-                <button type="button" className="btn-secondary" onClick={() => setShowEditMember(false)} disabled={isSubmitting}>Cancel</button>
-                <button type="submit" className="btn-primary" disabled={isSubmitting}>{isSubmitting ? 'Saving...' : 'Save Changes'}</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      <style>{`
-        .admin-form-label {
-          display: block;
-          font-size: 13px;
-          font-weight: 600;
-          color: var(--admin-navy);
-          margin-bottom: 8px;
-        }
-        .admin-form-input {
-          width: 100%;
-          padding: 8px 12px;
-          border-radius: 6px;
-          border: 1px solid var(--admin-border);
-          font-size: 14px;
-          color: var(--admin-navy);
-          outline: none;
-          font-family: inherit;
-        }
-        .admin-form-input:focus {
-          border-color: var(--admin-accent);
-          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-        }
-        .admin-form-input.error {
-          border-color: #EF4444;
-          background-color: #FEF2F2;
-        }
-      `}</style>
-
     </div>
-  );
+    <Modal title="Add Team Member" isOpen={open} onClose={() => setOpen(false)} footer={<><Button variant="ghost" onClick={() => setOpen(false)} disabled={submitting}>Cancel</Button><Button form="team-member-form" type="submit" disabled={submitting}>{submitting ? 'Creating...' : 'Create account'}</Button></>}>
+      <form id="team-member-form" onSubmit={createMember} className="space-y-4">
+        {error && <p className="text-sm text-red-600">{error}</p>}
+        <label className="block text-sm font-medium">Name<input required className="mt-1 w-full p-2 border rounded" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></label>
+        <label className="block text-sm font-medium">Email<input required type="email" className="mt-1 w-full p-2 border rounded" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></label>
+        <label className="block text-sm font-medium">Phone<input className="mt-1 w-full p-2 border rounded" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></label>
+        <label className="block text-sm font-medium">Role<select className="mt-1 w-full p-2 border rounded" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value, assigned_project_ids: [] })}>{roles.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+        <label className="block text-sm font-medium">Password<input required type="password" className="mt-1 w-full p-2 border rounded" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} /></label>
+        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })} /> Active</label>
+        {requiresProjects && <MultiSelect label="Assigned Projects" required options={projects.map((project) => ({ id: project.id, label: project.name }))} value={form.assigned_project_ids} onChange={(assigned_project_ids) => setForm({ ...form, assigned_project_ids })} placeholder="Select projects" emptyMessage="No projects found for this builder." />}
+      </form>
+    </Modal>
+  </div>;
 };
 
 export default TeamList;

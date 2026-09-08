@@ -70,7 +70,7 @@ export const UnitDocumentManagement: React.FC<UnitDocumentManagementProps> = ({
         fileName,
         fileType,
         fileSize,
-        uploadedBy: activeRole === 'builder_admin' ? 'Builder Admin' : (activeRole === 'contractor' ? 'Contractor' : 'Customer'),
+        uploadedBy: (activeRole === 'BUILDER_OWNER' || activeRole === 'PROJECT_ADMIN' || activeRole === 'SUPER_ADMIN') ? 'Builder Admin' : (activeRole === 'CONTRACTOR' ? 'Contractor' : 'Customer'),
         uploadedAt: new Date().toISOString().split('T')[0],
         status: 'Pending',
         description,

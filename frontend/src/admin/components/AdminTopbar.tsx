@@ -40,13 +40,14 @@ const AdminTopbar: React.FC<AdminTopbarProps> = ({ onMenuClick }) => {
 
   // Profile Mapping
   const roleMetadata: Record<string, { label: string; sub: string; avatar: string }> = {
-    super_admin: { label: 'Admin', sub: 'Handoverly Super Admin', avatar: 'SA' },
-    builder_admin: { label: 'Builder Admin', sub: 'Green Valley Admin', avatar: 'BA' },
-    project_manager: { label: 'Alex PM', sub: 'Project Manager', avatar: 'PM' },
-    site_engineer: { label: 'John Inspector', sub: 'Site Inspector', avatar: 'SI' },
-    crm: { label: 'Sarah Connor', sub: 'CRM / Customer Team', avatar: 'CR' },
-    accounts: { label: 'David Accountant', sub: 'Accounts Team', avatar: 'AC' },
-    contractor: { label: 'Apex Plumbing', sub: 'Contractor Partner', avatar: 'CO' },
+    SUPER_ADMIN: { label: 'Admin', sub: 'Handoverly Super Admin', avatar: 'SA' },
+    BUILDER_OWNER: { label: 'Builder Admin', sub: 'Green Valley Admin', avatar: 'BA' },
+    PROJECT_MANAGER: { label: 'Alex PM', sub: 'Project Manager', avatar: 'PM' },
+    SITE_ENGINEER: { label: 'John Inspector', sub: 'Site Inspector', avatar: 'SI' },
+    CRM: { label: 'Sarah Connor', sub: 'CRM / Customer Team', avatar: 'CR' },
+    ACCOUNTS: { label: 'David Accountant', sub: 'Accounts Team', avatar: 'AC' },
+    CONTRACTOR: { label: 'Apex Plumbing', sub: 'Contractor Partner', avatar: 'CO' },
+    CUSTOMER: { label: 'Property Owner', sub: 'Resident', avatar: 'PO' },
   };
 
   const meta = roleMetadata[activeRole] || { label: 'User', sub: 'Member', avatar: 'US' };
@@ -55,6 +56,9 @@ const AdminTopbar: React.FC<AdminTopbarProps> = ({ onMenuClick }) => {
     meta.label = user.name;
     const parts = user.name.split(' ');
     meta.avatar = parts.length > 1 ? `${parts[0][0]}${parts[1][0]}`.toUpperCase() : parts[0].substring(0, 2).toUpperCase();
+    if (user.builder_company_name) {
+      meta.sub = user.builder_company_name;
+    }
   }
 
   // Page title mapping based on route path
@@ -175,7 +179,7 @@ const AdminTopbar: React.FC<AdminTopbarProps> = ({ onMenuClick }) => {
                 <div className="topbar-profile__avatar" style={{ width: '48px', height: '48px' }}>{meta.avatar}</div>
                 <div>
                   <h4 className="topbar-dropdown__header-title">{meta.label}</h4>
-                  <p className="topbar-dropdown__header-subtitle">{activeRole === 'super_admin' ? 'admin@handoverly.com' : 'staff@greenvalley.com'}</p>
+                  <p className="topbar-dropdown__header-subtitle">{activeRole === 'SUPER_ADMIN' ? 'admin@handoverly.com' : 'staff@greenvalley.com'}</p>
                 </div>
               </div>
               
@@ -185,7 +189,7 @@ const AdminTopbar: React.FC<AdminTopbarProps> = ({ onMenuClick }) => {
               <button className="topbar-dropdown__item">
                 <Shield size={16} color="#718096" /> Security
               </button>
-              <button className="topbar-dropdown__item" onClick={() => navigate('/admin/settings')}>
+              <button className="topbar-dropdown__item" onClick={() => navigate(`/${activeRole === 'SUPER_ADMIN' ? 'admin' : activeRole.toLowerCase().replace('_', '-')}/settings`)}>
                 <Settings size={16} color="#718096" /> Settings
               </button>
               
