@@ -99,6 +99,7 @@ export interface Unit {
   /** projects.Unit.UNIT_STATUS_CHOICES slug (e.g. 'not_started', 'handed_over'). */
   status: string;
   customerId: string | null;
+  customer?: any;
   inspectionStatus: 'Pending' | 'In Progress' | 'Failed' | 'Passed';
   docsCleared: boolean;
   paymentCleared: boolean;
@@ -155,6 +156,7 @@ export interface Customer {
   phone: string;
   status: string;
   handoverStatus: 'Awaiting Review' | 'Inspection Scheduled' | 'Accepted' | 'Complete';
+  joined?: string;
   /** Units allocated via Unit.customer — served by TeamMemberSerializer. */
   allocated_units?: { id: number | string; unit_number: string; project_name: string; floor_name: string; block_name: string }[];
 }
@@ -310,6 +312,8 @@ export interface Payment {
   title?: string;
   dueDate?: string;
   clearedDate?: string;
+  unitAmount?: number;
+  pendingAmount?: number;
 }
 
 
@@ -335,4 +339,7 @@ export interface Database {
   plans: Plan[];
   templates: CommTemplate[];
 }
+
+export interface Charge { id: string; [key: string]: any; }
+
 

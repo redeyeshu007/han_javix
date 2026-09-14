@@ -95,13 +95,13 @@ const AccountsFinancialClearance: React.FC = () => {
                       <div style={{ fontWeight: 500, color: 'var(--admin-navy)' }}>{customer?.name || 'No Customer'}</div>
                     </td>
                     <td style={{ padding: '16px 24px', color: 'var(--admin-navy)', fontWeight: 500 }}>
-                      ₹{clearance.unitAmount.toLocaleString()}
+                      ₹{clearance.unitAmount?.toLocaleString()}
                     </td>
                     <td style={{ padding: '16px 24px', color: '#10B981', fontWeight: 600 }}>
                       ₹{clearance.amount.toLocaleString()}
                     </td>
                     <td style={{ padding: '16px 24px', color: '#F59E0B', fontWeight: 600 }}>
-                      ₹{clearance.pendingAmount.toLocaleString()}
+                      ₹{clearance.pendingAmount?.toLocaleString()}
                     </td>
                     <td style={{ padding: '16px 24px' }}>
                       <span className={`status-badge status-badge--${clearance.status === 'CLEARED' ? 'success' : clearance.status === 'ON_HOLD' ? 'error' : clearance.status === 'PARTIALLY_CLEARED' ? 'warning' : 'default'}`}>

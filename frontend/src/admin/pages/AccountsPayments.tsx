@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Filter, FileText, CreditCard } from 'lucide-react';
+import { Search, Plus, Filter, FileText, CreditCard, Receipt } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Unit, Customer, Payment } from '../../types';
 import { unitsApi, customersApi, paymentService, chargeService, paymentRecordService } from '../../api/services';

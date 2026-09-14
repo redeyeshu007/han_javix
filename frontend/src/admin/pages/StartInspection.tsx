@@ -40,7 +40,8 @@ const StartInspection: React.FC = () => {
     if (!inspectionIdParam) return;
     const resolve = async () => {
       try {
-        const response = await (await import('../../api/client')).default.get(`/inspections/inspections/${inspectionIdParam}/`);
+        const { apiClient } = await import('../../api/client');
+        const response = await apiClient.get(`/inspections/inspections/${inspectionIdParam}/`);
         const data = response.data;
         const uid = data.unit ? String(data.unit) : '';
         setResolvedUnitId(uid);
