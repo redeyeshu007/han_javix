@@ -6,13 +6,17 @@ export interface User {
   name: string;
   email: string;
   phone: string;
-  role: 'super_admin' | 'builder_admin' | 'project_manager' | 'site_engineer' | 'crm' | 'accounts' | 'contractor' | 'customer';
+  role: 'SUPER_ADMIN' | 'BUILDER_OWNER' | 'PROJECT_ADMIN' | 'SITE_ENGINEER' | 'ACCOUNTS' | 'CONTRACTOR' | 'CUSTOMER' | 'ASSOCIATION_REPRESENTATIVE';
   password: string;
   builderId?: string;
   builder_company_name?: string;
-  projectId?: string;
-  unitId?: string;
-  assignedProjectIds?: string[]; // project_manager / site_engineer / crm / accounts scoping
+  projectId?: string;         // CUSTOMER portal: unit's project id
+  unitId?: string;            // CUSTOMER portal: allocated unit id
+  unitNumber?: string;
+  projectName?: string;       // CUSTOMER portal: project name
+  assignedProjectId?: string;   // PROJECT_ADMIN: the single assigned project id
+  assignedProjectName?: string; // PROJECT_ADMIN: the single assigned project name
+  assignedProjectIds?: string[]; // site_engineer / accounts scoping
   status: 'Active' | 'Inactive';
   notifyEmail?: boolean;
   notifySystemAlerts?: boolean;
@@ -43,6 +47,7 @@ export interface Builder {
   brn: string;
   plan: string;
   subscription_plan_id?: string;
+  project_count?: number;
   status: 'Pending' | 'Active' | 'Suspended';
   joined: string;
 }
@@ -78,8 +83,21 @@ export interface Unit {
   projectId: string;
   blockId: string;
   floorId: string;
+  /** Writable backend FK field name (DRF UnitSerializer accepts `floor`, not `floorId`). */
+  floor?: string;
+  /** Writable backend model field names (UnitSerializer, fields='__all__'). */
+  unit_number?: string;
+  unit_type?: string;
+  area_sqft?: number;
+  area?: string;
+  project_name?: string;
+  block_name?: string;
+  floor_name?: string;
+  price?: number;
+  sale_value?: number;
   name: string;
-  status: 'Under Construction' | 'Ready for Inspection' | 'Defects Found' | 'Resolved' | 'Approved' | 'Handed Over';
+  /** projects.Unit.UNIT_STATUS_CHOICES slug (e.g. 'not_started', 'handed_over'). */
+  status: string;
   customerId: string | null;
   inspectionStatus: 'Pending' | 'In Progress' | 'Failed' | 'Passed';
   docsCleared: boolean;
@@ -91,7 +109,26 @@ export interface Unit {
   areaSqFt?: number;
   bedrooms?: number;
   bathrooms?: number;
-  parking?: string;
+
+  /** Workspace-only display names (from unit.block.name / unit.floor.name). */
+  blockName?: string;
+  floorName?: string;
+}
+
+export interface UnitWorkspace {
+  unit: Unit;
+  project: { id: string; name: string } | null;
+  customer: { id: string; name: string; email: string; phone: string } | null;
+  counts: {
+    open_defects: number; critical_defects: number; documents: number;
+    inspections: number; pending_payments: number;
+  };
+  lists: {
+    inspections: any[];
+    defects: any[];
+    documents: any[];
+    payments: any[];
+  };
 }
 
 export interface Inspection {
@@ -100,10 +137,12 @@ export interface Inspection {
   projectId: string;
   unitId: string;
   inspectorId: string;
-  status: 'Scheduled' | 'In Progress' | 'Completed';
+  /** inspections.UnitInspection.STATUS_CHOICES slug ('not_started' | 'in_progress' | 'completed'). */
+  status: string;
   date: string;
   checklistId?: string;
   notes?: string;
+  results?: any[];
 }
 
 export interface Customer {
@@ -116,6 +155,8 @@ export interface Customer {
   phone: string;
   status: string;
   handoverStatus: 'Awaiting Review' | 'Inspection Scheduled' | 'Accepted' | 'Complete';
+  /** Units allocated via Unit.customer — served by TeamMemberSerializer. */
+  allocated_units?: { id: number | string; unit_number: string; project_name: string; floor_name: string; block_name: string }[];
 }
 
 export interface Defect {
@@ -127,9 +168,11 @@ export interface Defect {
   title: string;
   description: string;
   location: string;
-  severity: 'Low' | 'Medium' | 'High';
+  /** Display label derived from the backend priority slug. */
+  severity: 'Low' | 'Medium' | 'High' | 'Critical';
   contractorId: string;
-  status: 'Open' | 'Assigned' | 'In Progress' | 'Resolved' | 'Closed';
+  /** inspections.Defect.STATUS_CHOICES slug (e.g. 'open', 'resolved'). */
+  status: string;
   evidence: string[];
   resolutionEvidence?: string;
   timeline: { status: string; date: string; note: string }[];
@@ -171,7 +214,8 @@ export interface Document {
   fileSize: string;
   uploadedBy: string;
   uploadedAt: string;
-  status: 'Pending' | 'Verified' | 'Rejected';
+  /** documents.Document.STATUS_CHOICES slug (e.g. 'APPROVED', 'REJECTED'). */
+  status: string;
   description?: string;
   fileData?: string; // base64 or temporary object URL
   rejectionReason?: string;
@@ -251,7 +295,8 @@ export interface Payment {
   paymentDate: string;
   paymentMethod: string;
   reference: string;
-  status: 'Pending Verification' | 'Verified' | 'Cleared' | 'Rejected';
+  /** handovers.PaymentClearance.STATUS_CHOICES slug (e.g. 'PENDING_PAYMENT', 'CLEARED'). */
+  status: string;
   notes?: string;
   proofFileName?: string;
   proofFileData?: string;

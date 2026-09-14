@@ -3,6 +3,7 @@ import { Routes, Route, useLocation } from 'react-router-dom';
 import LandingPage from './LandingPage';
 import ServicesPage from './ServicesPage';
 import LoginPage from './LoginPage';
+import CustomerLoginPage from './CustomerLoginPage';
 import ForgotPassword from './ForgotPassword';
 import ResetPassword from './ResetPassword';
 import ParticleText from './ParticleText';
@@ -35,16 +36,17 @@ const App: React.FC = () => {
   const pathname = location.pathname.toLowerCase();
   const isServices = pathname === '/services';
   const isLogin = pathname === '/login';
+  const isCustomerLogin = pathname === '/customer-login';
   const isForgotPassword = pathname === '/forgot-password';
   const isResetPassword = pathname === '/reset-password';
   
   const protectedNamespaces = [
-    '/admin', '/builder', '/project-admin', '/project-manager', 
-    '/site-engineer', '/crm', '/accounts', '/contractor', 
+    '/admin', '/builder', '/project-admin',
+    '/site-engineer', '/accounts', '/contractor', 
     '/customer', '/association'
   ];
   
-  const isProtectedPath = protectedNamespaces.some(ns => pathname.startsWith(ns)) || isLogin || isForgotPassword || isResetPassword;
+  const isProtectedPath = protectedNamespaces.some(ns => pathname.startsWith(ns)) || isLogin || isCustomerLogin || isForgotPassword || isResetPassword;
 
   return (
     <>
@@ -92,15 +94,14 @@ const App: React.FC = () => {
       {isProtectedPath ? (
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/customer-login" element={<CustomerLoginPage />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           
           <Route path="/admin/*" element={<ProtectedRoute allowedRoles={['SUPER_ADMIN']}><AdminApp /></ProtectedRoute>} />
           <Route path="/builder/*" element={<ProtectedRoute allowedRoles={['BUILDER_OWNER']}><AdminApp /></ProtectedRoute>} />
           <Route path="/project-admin/*" element={<ProtectedRoute allowedRoles={['PROJECT_ADMIN']}><AdminApp /></ProtectedRoute>} />
-          <Route path="/project-manager/*" element={<ProtectedRoute allowedRoles={['PROJECT_MANAGER']}><AdminApp /></ProtectedRoute>} />
           <Route path="/site-engineer/*" element={<ProtectedRoute allowedRoles={['SITE_ENGINEER']}><AdminApp /></ProtectedRoute>} />
-          <Route path="/crm/*" element={<ProtectedRoute allowedRoles={['CRM']}><AdminApp /></ProtectedRoute>} />
           <Route path="/accounts/*" element={<ProtectedRoute allowedRoles={['ACCOUNTS']}><AdminApp /></ProtectedRoute>} />
           <Route path="/contractor/*" element={<ProtectedRoute allowedRoles={['CONTRACTOR']}><AdminApp /></ProtectedRoute>} />
           <Route path="/customer/*" element={<ProtectedRoute allowedRoles={['CUSTOMER']}><AdminApp /></ProtectedRoute>} />

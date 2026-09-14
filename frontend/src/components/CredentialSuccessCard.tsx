@@ -6,10 +6,11 @@ interface CredentialSuccessCardProps {
   role: string;
   email: string;
   password?: string;
+  assignedProjects?: string[];
   onClose: () => void;
 }
 
-export const CredentialSuccessCard: React.FC<CredentialSuccessCardProps> = ({ name, role, email, password, onClose }) => {
+export const CredentialSuccessCard: React.FC<CredentialSuccessCardProps> = ({ name, role, email, password, assignedProjects, onClose }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [copiedField, setCopiedField] = useState<'email' | 'password' | 'all' | null>(null);
 
@@ -21,7 +22,10 @@ export const CredentialSuccessCard: React.FC<CredentialSuccessCardProps> = ({ na
     } else if (type === 'password' && password) {
       textToCopy = password;
     } else if (type === 'all' && password) {
-      textToCopy = `Handoverly Account\n\nName: ${name}\nRole: ${role}\nEmail: ${email}\nPassword: ${password}`;
+      const projText = assignedProjects && assignedProjects.length > 0 
+        ? `\nAssigned Projects: ${assignedProjects.join(', ')}`
+        : '';
+      textToCopy = `Handoverly Account\n\nName: ${name}\nRole: ${role}\nEmail: ${email}\nPassword: ${password}${projText}`;
     }
 
     navigator.clipboard.writeText(textToCopy).then(() => {
@@ -68,6 +72,15 @@ export const CredentialSuccessCard: React.FC<CredentialSuccessCardProps> = ({ na
             <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--admin-navy)' }}>{role}</div>
           </div>
           
+          {assignedProjects && assignedProjects.length > 0 && (
+            <div>
+              <div style={{ fontSize: '12px', color: 'var(--admin-text-secondary)', marginBottom: '4px' }}>Assigned Projects</div>
+              <div style={{ fontSize: '14px', color: 'var(--admin-navy)' }}>
+                {assignedProjects.join(', ')}
+              </div>
+            </div>
+          )}
+
           <div>
             <div style={{ fontSize: '12px', color: 'var(--admin-text-secondary)', marginBottom: '4px' }}>Email</div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#F8FAFC', padding: '10px 12px', borderRadius: '6px', border: '1px solid var(--admin-border)' }}>

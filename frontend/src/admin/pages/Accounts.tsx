@@ -13,9 +13,8 @@ import { PageLoading } from '../../components/LoadingState';
 const ROLE_LABELS: Record<string, string> = {
   super_admin: 'Super Admin',
   builder_admin: 'Builder Admin',
-  project_manager: 'Project Manager',
+  project_admin: 'Project Admin',
   site_engineer: 'Site Engineer',
-  crm: 'CRM',
   accounts: 'Accounts',
   contractor: 'Contractor',
   customer: 'Customer'
@@ -220,7 +219,7 @@ const Accounts: React.FC = () => {
             <Input type="email" label="Email" required error={errors.email} value={email} onChange={e => setEmail(e.target.value)} />
             <Input type="tel" label="Phone" value={phone} onChange={e => setPhone(e.target.value)} />
             <div style={{ gridColumn: '1 / -1', fontSize: '13px', color: 'var(--admin-text-secondary)' }}>
-              This creates a platform-level Super Admin account. Builder-scoped roles (Builder Admin, Project Manager, Site Engineer, CRM, Accounts) are created from within a builder's Team page.
+              This creates a platform-level Super Admin account. Builder-scoped roles (Builder Admin, Project Admin, Site Engineer, Accounts) are created from within a builder's Team page.
             </div>
             <Input type="password" label="Password" required error={errors.password} value={password} onChange={e => setPassword(e.target.value)} />
             <Input type="password" label="Confirm Password" required error={errors.confirmPassword} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />

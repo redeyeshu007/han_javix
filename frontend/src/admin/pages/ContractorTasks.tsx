@@ -133,11 +133,11 @@ const ContractorTasks: React.FC = () => {
         <div style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid var(--admin-border)', padding: '24px' }}>
           <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--admin-navy)', borderBottom: '1px solid var(--admin-border)', paddingBottom: '12px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <AlertTriangle size={16} color="#F59E0B" />
-            ASSIGNED REPAIRS ({defects.filter(d => d.status === 'Assigned' || d.status === 'Open').length})
+            ASSIGNED REPAIRS ({defects.filter(d => d.status === 'assigned' || d.status === 'open').length})
           </h3>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {defects.filter(d => d.status === 'Assigned' || d.status === 'Open').map(d => {
+            {defects.filter(d => d.status === 'assigned' || d.status === 'open').map(d => {
               const u = units.find(unit => unit.id === d.unitId);
               return (
                 <div key={d.id} style={{ padding: '16px', border: '1px solid var(--admin-border)', borderRadius: '8px', backgroundColor: '#FAFCFF' }}>
@@ -151,7 +151,7 @@ const ContractorTasks: React.FC = () => {
                 </div>
               );
             })}
-            {defects.filter(d => d.status === 'Assigned' || d.status === 'Open').length === 0 && (
+            {defects.filter(d => d.status === 'assigned' || d.status === 'open').length === 0 && (
               <div style={{ fontSize: '13px', color: 'var(--admin-text-secondary)', fontStyle: 'italic', textAlign: 'center', padding: '16px' }}>
                 No newly assigned tasks.
               </div>
@@ -163,11 +163,11 @@ const ContractorTasks: React.FC = () => {
         <div style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid var(--admin-border)', padding: '24px' }}>
           <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--admin-navy)', borderBottom: '1px solid var(--admin-border)', paddingBottom: '12px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Play size={16} color="var(--admin-accent)" />
-            ACTIVE WORK ({defects.filter(d => d.status === 'In Progress').length})
+            ACTIVE WORK ({defects.filter(d => d.status === 'in_progress').length})
           </h3>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {defects.filter(d => d.status === 'In Progress').map(d => {
+            {defects.filter(d => d.status === 'in_progress').map(d => {
               const u = units.find(unit => unit.id === d.unitId);
               const isResolving = resolvingId === d.id;
 
@@ -207,7 +207,7 @@ const ContractorTasks: React.FC = () => {
                 </div>
               );
             })}
-            {defects.filter(d => d.status === 'In Progress').length === 0 && (
+            {defects.filter(d => d.status === 'in_progress').length === 0 && (
               <div style={{ fontSize: '13px', color: 'var(--admin-text-secondary)', fontStyle: 'italic', textAlign: 'center', padding: '16px' }}>
                 No active work items.
               </div>
@@ -219,11 +219,11 @@ const ContractorTasks: React.FC = () => {
         <div style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid var(--admin-border)', padding: '24px' }}>
           <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--admin-navy)', borderBottom: '1px solid var(--admin-border)', paddingBottom: '12px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <CheckSquare size={16} color="#2563EB" />
-            COMPLETED WORK ({defects.filter(d => d.status === 'Resolved' || d.status === 'Closed').length})
+            COMPLETED WORK ({defects.filter(d => d.status === 'resolved' || d.status === 'closed').length})
           </h3>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {defects.filter(d => d.status === 'Resolved' || d.status === 'Closed').map(d => {
+            {defects.filter(d => d.status === 'resolved' || d.status === 'closed').map(d => {
               const u = units.find(unit => unit.id === d.unitId);
               return (
                 <div key={d.id} style={{ padding: '12px', border: '1px solid var(--admin-border)', borderRadius: '8px', opacity: 0.8 }}>
@@ -234,7 +234,7 @@ const ContractorTasks: React.FC = () => {
                 </div>
               );
             })}
-            {defects.filter(d => d.status === 'Resolved' || d.status === 'Closed').length === 0 && (
+            {defects.filter(d => d.status === 'resolved' || d.status === 'closed').length === 0 && (
               <div style={{ fontSize: '13px', color: 'var(--admin-text-secondary)', fontStyle: 'italic', textAlign: 'center', padding: '16px' }}>
                 No completed work logged yet.
               </div>

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Check, Building2, User, CreditCard, ClipboardCheck, Upload, AlertCircle, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Check, Building2, User, CreditCard, ClipboardCheck, AlertCircle, RefreshCw } from 'lucide-react';
 import { PageHeader } from '../components/AdminUI';
-import { buildersApi, usersApi, plansApi } from '../../api/services';
+import { buildersApi, usersApi, plansApi, formatINR } from '../../api/services';
 import { CredentialSuccessCard } from '../../components/CredentialSuccessCard';
 import { Eye, EyeOff } from 'lucide-react';
 
@@ -59,6 +59,7 @@ const AddBuilder: React.FC = () => {
   };
 
   const [errors, setErrors] = useState<any>({});
+  const [submitError, setSubmitError] = useState<string | null>(null);
   
   // Credential Card state
   const [showSuccessCard, setShowSuccessCard] = useState(false);
@@ -102,23 +103,28 @@ const AddBuilder: React.FC = () => {
   const handleSubmit = async () => {
     if (loading) return;
     setLoading(true);
+    setSubmitError(null);
 
     try {
       const newBuilder = await buildersApi.createBuilder({
-        name: companyName,
-        contact: adminFullName,
+        // Company fields — match backend BuilderCompany model field names exactly
+        company_name: companyName,
+        contact_name: adminFullName,
         email: corporateEmail,
-        phone: corporatePhone,
-        address: `${addressLine1}, ${city}, ${stateRegion}, ${country} ${pincode}`,
-        brn: registrationNumber,
-        plan: subscriptionTierName,
-        subscription_plan_id: subscriptionTier,
-        status: 'Active',
-        adminEmail: adminEmail,
-        adminPassword: adminPassword,
-        adminName: adminFullName,
-        adminPhone: adminPhone
-      } as any);
+        contact_number: corporatePhone,
+        registered_address: [addressLine1, addressLine2, city, stateRegion, country, pincode]
+          .filter(Boolean)
+          .join(', '),
+        registration_number: registrationNumber,
+        status: 'ACTIVE',
+        // subscription_plan is the FK field name on the model
+        ...(subscriptionTier ? { subscription_plan: subscriptionTier } : {}),
+        // Admin (owner) credentials — backend serializer write-only fields
+        admin_email: adminEmail,
+        admin_password: adminPassword,
+        admin_name: adminFullName,
+        admin_phone: adminPhone,
+      });
 
 
 
@@ -131,10 +137,18 @@ const AddBuilder: React.FC = () => {
         password: adminPassword
       });
       setShowSuccessCard(true);
-    } catch (error) {
+    } catch (error: any) {
       setLoading(false);
       console.error('Failed to create builder', error);
-      // optionally show an error message
+      // Extract the most useful error message from the API response
+      const data = error?.response?.data;
+      if (data) {
+        const firstKey = Object.keys(data)[0];
+        const msg = Array.isArray(data[firstKey]) ? data[firstKey][0] : data[firstKey];
+        setSubmitError(typeof msg === 'string' ? msg : 'Failed to create builder. Please check all fields and try again.');
+      } else {
+        setSubmitError(error?.message || 'Failed to create builder. Please try again.');
+      }
     }
   };
 
@@ -375,13 +389,7 @@ const AddBuilder: React.FC = () => {
                     </div>
                   </div>
 
-                  <div>
-                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--admin-navy)', marginBottom: '8px' }}>Builder Logo</label>
-                    <div style={{ padding: '24px', border: '1px dashed var(--admin-border)', borderRadius: '8px', textAlign: 'center', cursor: 'pointer', backgroundColor: '#F8FAFC' }}>
-                      <Upload size={24} style={{ color: '#64748B', margin: '0 auto 8px auto' }} />
-                      <span style={{ fontSize: '14px', color: 'var(--admin-navy)', fontWeight: 500 }}>Click to upload logo</span>
-                    </div>
-                  </div>
+
                   <div>
                     <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--admin-navy)', marginBottom: '8px' }}>Notes</label>
                     <textarea className="admin-form-input" style={{ minHeight: '80px', resize: 'vertical' }} value={notes} onChange={e => setNotes(e.target.value)} placeholder="Optional internal notes..." />
@@ -429,8 +437,8 @@ const AddBuilder: React.FC = () => {
                           {plan.description}
                         </p>
                         <div style={{ fontSize: '24px', fontWeight: 700, color: 'var(--admin-navy)' }}>
-                          ${plan.price}
-                          <span style={{ fontSize: '13px', color: 'var(--admin-text-secondary)', fontWeight: 400 }}>/{plan.billingCycle === 'Monthly' ? 'mo' : 'yr'}</span>
+                          {formatINR(parseFloat(plan.price) || 0)}
+                          <span style={{ fontSize: '13px', color: 'var(--admin-text-secondary)', fontWeight: 400 }}>/{(plan.billing_cycle || plan.billingCycle) === 'Monthly' ? 'mo' : 'yr'}</span>
                         </div>
                       </div>
                     ))}
@@ -443,7 +451,14 @@ const AddBuilder: React.FC = () => {
             {step === 4 && (
               <div className="fade-in">
                 <h3 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--admin-navy)', marginBottom: '8px' }}>Review & Confirm</h3>
-                <p style={{ fontSize: '14px', color: 'var(--admin-text-secondary)', marginBottom: '32px' }}>Please review the details before provisioning the account.</p>
+                <p style={{ fontSize: '14px', color: 'var(--admin-text-secondary)', marginBottom: '24px' }}>Please review the details before provisioning the account.</p>
+
+                {submitError && (
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '14px 16px', backgroundColor: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '10px', marginBottom: '24px' }}>
+                    <AlertCircle size={18} style={{ color: '#DC2626', flexShrink: 0, marginTop: '1px' }} />
+                    <div style={{ fontSize: '14px', color: '#B91C1C', fontWeight: 500 }}>{submitError}</div>
+                  </div>
+                )}
                 
                 <div style={{ backgroundColor: 'var(--admin-bg)', padding: '24px', borderRadius: '12px', border: '1px solid var(--admin-border)' }}>
                   

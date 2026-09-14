@@ -1,34 +1,37 @@
 import React, { useState, useEffect } from 'react';
 import { Wrench, Check } from 'lucide-react';
 import { ServiceRequest, Unit, Customer } from '../../types';
-import { serviceRequestsService } from '../../services/serviceRequestsService';
-import { projectsService } from '../../services/projectsService';
-import { customersService } from '../../services/customersService';;
+import { serviceRequestsApi, customersApi, unitsApi } from '../../api/services';
 
 const CareWorkspace: React.FC = () => {
   const [requests, setRequests] = useState<ServiceRequest[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
 
-  const loadData = () => {
-    setRequests(serviceRequestsService.getServiceRequests());
-    setUnits(projectsService.getUnits());
-    setCustomers(customersService.getCustomers());
+  const loadData = async () => {
+    const [reqs, fetchedUnits, fetchedCustomers] = await Promise.all([
+      serviceRequestsApi.getRequests(),
+      unitsApi.getUnits(),
+      customersApi.getCustomers(),
+    ]);
+    setRequests(reqs);
+    setUnits(fetchedUnits);
+    setCustomers(fetchedCustomers);
   };
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 2000);
+    const interval = setInterval(loadData, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  const handleUpdateStatus = (id: string, status: ServiceRequest['status']) => {
-    serviceRequestsService.updateServiceRequest(id, status);
+  const handleUpdateStatus = async (id: string, status: any) => {
+    await serviceRequestsApi.updateRequest(id, status);
     loadData();
   };
 
-  const handleAssignContractor = (id: string, contractorId: string) => {
-    serviceRequestsService.updateServiceRequest(id, 'Assign', contractorId);
+  const handleAssignContractor = async (id: string, contractorId: string) => {
+    await serviceRequestsApi.updateRequest(id, 'Scheduled', contractorId);
     loadData();
   };
 

@@ -5,6 +5,8 @@ import {
   Layers, Home, CheckCircle2, AlertCircle, Clock, ChevronRight
 } from 'lucide-react';
 import { apiClient } from '../../api/client';
+import { useRole } from '../../context/RoleContext';
+import { ROLE_NAMESPACES } from '../../utils/roleUtils';
 
 /* ── helpers ─────────────────────────────────────────────────────────── */
 const formatStatus = (s: string) =>
@@ -45,10 +47,10 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
   );
 };
 
-const UnitBadge: React.FC<{ unit: any }> = ({ unit }) => {
+const UnitBadge: React.FC<{ unit: any; ns: string }> = ({ unit, ns }) => {
   const cfg = unitStatusConfig[unit.status] || { bg: 'bg-slate-50', text: 'text-slate-600', border: 'border-slate-200', dot: 'bg-slate-400' };
   return (
-    <Link to={`/builder/units/${unit.id}`} className="group no-underline">
+    <Link to={`${ns}/units/${unit.id}`} className="group no-underline">
       <div className={`flex flex-col items-center justify-center p-3 min-w-[96px] rounded-xl border ${cfg.border} ${cfg.bg} hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer`}>
         <span className="text-[14px] font-bold text-[#0F172A]">{unit.unit_number}</span>
         <span className={`text-[10px] font-semibold mt-1 ${cfg.text}`}>{formatStatus(unit.status)}</span>
@@ -88,6 +90,7 @@ const inputCls = (err?: string) =>
 /* ══════════════════════════════════════════════════════════════════════ */
 const ProjectDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const { activeRole } = useRole();
   const [project, setProject] = useState<any | null>(null);
   const [blocks, setBlocks] = useState<any[]>([]);
   const [floors, setFloors] = useState<any[]>([]);
@@ -117,7 +120,6 @@ const ProjectDetail: React.FC = () => {
   const [unitBlockId, setUnitBlockId] = useState('');
   const [unitFloorId, setUnitFloorId] = useState('');
   const [newUnitName, setNewUnitName] = useState('');
-  const [newUnitType, setNewUnitType] = useState('apartment');
   const [newUnitArea, setNewUnitArea] = useState('');
   const [newUnitBedrooms, setNewUnitBedrooms] = useState('1');
   const [newUnitBathrooms, setNewUnitBathrooms] = useState('1');
@@ -222,13 +224,12 @@ const ProjectDetail: React.FC = () => {
     try {
       await apiClient.post('/projects/units/', {
         floor: unitFloorId, unit_number: newUnitName,
-        unit_type: newUnitType,
         area_sqft: newUnitArea ? Number(newUnitArea) : undefined,
         bedrooms: Number(newUnitBedrooms) || undefined,
         bathrooms: Number(newUnitBathrooms) || undefined,
         status: newUnitStatus,
       });
-      setNewUnitName(''); setNewUnitArea(''); setNewUnitType('apartment');
+      setNewUnitName(''); setNewUnitArea('');
       setNewUnitBedrooms('1'); setNewUnitBathrooms('1'); setNewUnitStatus('under_construction');
       setShowUnitModal(false);
       setErrors({});
@@ -307,7 +308,11 @@ const ProjectDetail: React.FC = () => {
                     <span className="text-[13px] font-medium text-slate-400">·</span>
                   )}
                   {project.project_type && (
-                    <span className="text-[13px] font-medium text-slate-500 capitalize">{project.project_type.replace('_', ' ')}</span>
+                    <span className="text-[13px] font-medium text-slate-500 capitalize">
+                      {project.project_type === 'other' && project.project_type_other
+                        ? project.project_type_other
+                        : project.project_type.replace('_', ' ')}
+                    </span>
                   )}
                   <StatusBadge status={project.status} />
                 </div>
@@ -316,30 +321,34 @@ const ProjectDetail: React.FC = () => {
 
             {/* action buttons */}
             <div className="flex items-center gap-2 flex-wrap">
-              <button
-                onClick={() => setShowBlockModal(true)}
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-white border border-slate-200 hover:border-slate-300 text-slate-700 text-[13px] font-semibold shadow-sm hover:shadow-md transition-all duration-200"
-              >
-                <Plus size={14} /> Add Block
-              </button>
-              <button
-                onClick={() => {
-                  if (blocks.length > 0) { setFloorBlockId(String(blocks[0].id)); setShowFloorModal(true); }
-                  else alert('Create a Block first.');
-                }}
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-white border border-slate-200 hover:border-slate-300 text-slate-700 text-[13px] font-semibold shadow-sm hover:shadow-md transition-all duration-200"
-              >
-                <Plus size={14} /> Add Floor
-              </button>
-              <button
-                onClick={() => {
-                  if (blocks.length > 0 && floors.length > 0) setShowUnitModal(true);
-                  else alert('Create a Block and at least one Floor first.');
-                }}
-                className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[13px] font-bold shadow-[0_4px_12px_-2px_rgba(37,99,235,0.35)] hover:shadow-[0_8px_16px_-4px_rgba(37,99,235,0.4)] hover:-translate-y-0.5 transition-all duration-200"
-              >
-                <Plus size={14} /> Add Unit
-              </button>
+              {activeRole !== 'PROJECT_ADMIN' && (
+                <>
+                  <button
+                    onClick={() => setShowBlockModal(true)}
+                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-white border border-slate-200 hover:border-slate-300 text-slate-700 text-[13px] font-semibold shadow-sm hover:shadow-md transition-all duration-200"
+                  >
+                    <Plus size={14} /> Add Block
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (blocks.length > 0) { setFloorBlockId(String(blocks[0].id)); setShowFloorModal(true); }
+                      else alert('Create a Block first.');
+                    }}
+                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-white border border-slate-200 hover:border-slate-300 text-slate-700 text-[13px] font-semibold shadow-sm hover:shadow-md transition-all duration-200"
+                  >
+                    <Plus size={14} /> Add Floor
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (blocks.length > 0 && floors.length > 0) setShowUnitModal(true);
+                      else alert('Create a Block and at least one Floor first.');
+                    }}
+                    className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[13px] font-bold shadow-[0_4px_12px_-2px_rgba(37,99,235,0.35)] hover:shadow-[0_8px_16px_-4px_rgba(37,99,235,0.4)] hover:-translate-y-0.5 transition-all duration-200"
+                  >
+                    <Plus size={14} /> Add Unit
+                  </button>
+                </>
+              )}
             </div>
           </div>
 
@@ -412,7 +421,7 @@ const ProjectDetail: React.FC = () => {
                               {/* units grid */}
                               <div className="flex-1 flex flex-wrap gap-2.5 pb-4 border-b border-slate-100 last:border-0 last:pb-0">
                                 {floorUnits.length > 0 ? (
-                                  floorUnits.map(unit => <UnitBadge key={unit.id} unit={unit} />)
+                                  floorUnits.map(unit => <UnitBadge key={unit.id} unit={unit} ns={ROLE_NAMESPACES[activeRole as any] || '/builder'} />)
                                 ) : (
                                   <div className="flex items-center gap-2 text-[13px] text-slate-400 py-2">
                                     <Home size={14} />
@@ -472,9 +481,7 @@ const ProjectDetail: React.FC = () => {
             <Field label="Block Code" required error={errors.code}>
               <input className={inputCls(errors.code)} value={newBlockCode} onChange={e => setNewBlockCode(e.target.value)} placeholder="e.g. BLK-A" />
             </Field>
-            <Field label="Number of Floors">
-              <input type="number" className={inputCls()} value={newBlockFloors} onChange={e => setNewBlockFloors(e.target.value)} placeholder="Optional" />
-            </Field>
+
             <Field label="Description">
               <textarea className={inputCls()} rows={2} value={newBlockDescription} onChange={e => setNewBlockDescription(e.target.value)} placeholder="Optional description" />
             </Field>
@@ -549,14 +556,6 @@ const ProjectDetail: React.FC = () => {
               <input className={inputCls(errors.name)} value={newUnitName} onChange={e => setNewUnitName(e.target.value)} placeholder="e.g. A-101, Villa 4" />
             </Field>
             <div className="grid grid-cols-2 gap-4">
-              <Field label="Unit Type">
-                <select className={inputCls()} value={newUnitType} onChange={e => setNewUnitType(e.target.value)}>
-                  <option value="apartment">Apartment</option>
-                  <option value="villa">Villa</option>
-                  <option value="commercial">Commercial</option>
-                  <option value="studio">Studio</option>
-                </select>
-              </Field>
               <Field label="Area (sq ft)">
                 <input type="number" className={inputCls()} value={newUnitArea} onChange={e => setNewUnitArea(e.target.value)} placeholder="Optional" />
               </Field>

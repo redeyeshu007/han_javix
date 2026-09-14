@@ -10,6 +10,9 @@ import {
   Settings,
   Home,
   Briefcase,
+  Construction,
+  AlertTriangle,
+  Building,
   UserCheck,
   Key,
   HeartHandshake,
@@ -28,7 +31,7 @@ interface AdminSidebarProps {
 }
 
 const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
-  const { activeRole } = useRole();
+  const { activeRole, activeProjectId, activeProjectName } = useRole();
 
   // Close on ESC
   useEffect(() => {
@@ -48,12 +51,42 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
       items: [
         { name: 'Builders', icon: Building2, path: `${ns}/builders` },
         { name: 'Plans', icon: CreditCard, path: `${ns}/plans` },
+        { name: 'Billing', icon: CreditCard, path: `${ns}/billing` },
       ]
     },
     {
       title: 'Standards',
       items: [
         { name: 'Checklists', icon: CheckSquare, path: `${ns}/checklists` },
+      ]
+    }
+  ];
+
+  const builderOwnerSections = [
+    {
+      title: 'Company',
+      items: [
+        { name: 'Dashboard', icon: Home, path: `${ns}/dashboard` },
+        { name: 'Projects', icon: Briefcase, path: `${ns}/projects` },
+        { name: 'Team', icon: Users, path: `${ns}/team` },
+        { name: 'Contractors', icon: Construction, path: `${ns}/contractors` },
+        { name: 'Customers', icon: UserCheck, path: `${ns}/customers` },
+      ]
+    },
+    {
+      title: 'Operations',
+      items: [
+        { name: 'Inspections', icon: CheckSquare, path: `${ns}/inspections` },
+        { name: 'Defects / Snags', icon: AlertTriangle, path: `${ns}/defects` },
+        { name: 'Handover Status', icon: Key, path: `${ns}/handover` },
+        { name: 'Care / Warranty', icon: HeartHandshake, path: `${ns}/care` },
+        { name: 'Association', icon: Building, path: `${ns}/association` },
+      ]
+    },
+    {
+      title: 'Reports',
+      items: [
+        { name: 'Reports', icon: FileBarChart, path: `${ns}/reports` },
       ]
     }
   ];
@@ -93,6 +126,23 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
     }
   ];
 
+  const projectAdminSections = [
+    {
+      title: 'Project Scope',
+      items: [
+        { name: 'Dashboard', icon: Home, path: `${ns}/dashboard` },
+        { name: 'Project Overview', icon: Briefcase, path: `${ns}/projects${activeProjectId ? `/${activeProjectId}` : ''}` },
+        { name: 'Customers', icon: UserCheck, path: `${ns}/customers` },
+      ]
+    },
+    {
+      title: 'Operations',
+      items: [
+        { name: 'Handover Status', icon: Key, path: `${ns}/handover` },
+      ]
+    }
+  ];
+
   const customerSections = [
     {
       title: 'My Home',
@@ -128,15 +178,39 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
 
   const accountsSections = [
     {
-      title: 'Operations',
+      title: 'Financial Operations',
       items: [
-        { name: 'Clearance', icon: Briefcase, path: `${ns}/clearance` },
         { name: 'Payments', icon: CreditCard, path: `${ns}/payments` },
+        { name: 'Charges', icon: FileText, path: `${ns}/charges` },
+        { name: 'Payment Verification', icon: CheckSquare, path: `${ns}/verification` },
+        { name: 'Financial Clearance', icon: Briefcase, path: `${ns}/clearance` },
+      ]
+    },
+    {
+      title: 'Customers',
+      items: [
+        { name: 'Customers', icon: UserCheck, path: `${ns}/customers` },
       ]
     }
   ];
 
-  const renderDashboardPath = `${ns}/dashboard`;
+  const siteEngineerSections = [
+    {
+      title: 'Technical Scope',
+      items: [
+        { name: 'Inspections', icon: CheckSquare, path: `${ns}/inspections` },
+        { name: 'Defects', icon: FileText, path: `${ns}/defects` },
+      ]
+    },
+    {
+      title: 'Account',
+      items: [
+        { name: 'Settings', icon: Settings, path: `${ns}/settings` }
+      ]
+    }
+  ];
+
+  const renderDashboardPath = activeRole === 'SITE_ENGINEER' ? `${ns}/inspections` : `${ns}/dashboard`;
   
   let currentSections = superAdminSections;
   if (activeRole === 'CONTRACTOR') {
@@ -145,6 +219,10 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
     currentSections = customerSections;
   } else if (activeRole === 'ACCOUNTS') {
     currentSections = accountsSections;
+  } else if (activeRole === 'PROJECT_ADMIN') {
+    currentSections = projectAdminSections;
+  } else if (activeRole === 'SITE_ENGINEER') {
+    currentSections = siteEngineerSections;
   } else if (activeRole !== 'SUPER_ADMIN') {
     currentSections = builderSections;
   }
@@ -161,10 +239,17 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
       <aside 
         className={`fixed top-0 bottom-0 left-0 w-[260px] bg-[#0B1F33] text-white z-[70] flex flex-col transform transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] shadow-[4px_0_24px_rgba(0,0,0,0.15)] border-r border-white/5 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
       >
-        <div className="h-[72px] flex items-center justify-between px-6 border-b border-white/5">
-          <Link to={renderDashboardPath} className="font-bold text-[16px] tracking-wide text-white" onClick={onClose}>
-            HANDOVERLY <span className="text-[#3B82F6]">AI</span>
-          </Link>
+        <div className="h-[72px] flex items-center justify-between px-6 border-b border-white/5 relative">
+          <div className="flex flex-col">
+            <Link to={renderDashboardPath} className="font-bold text-[16px] tracking-wide text-white leading-tight" onClick={onClose}>
+              HANDOVERLY <span className="text-[#3B82F6]">AI</span>
+            </Link>
+            {activeRole === 'ACCOUNTS' && (
+              <span className="text-[11px] text-slate-400 mt-1 truncate max-w-[180px] font-medium tracking-wide">
+                {activeProjectName ? `${activeProjectName} · Accounts` : 'Accounts Console'}
+              </span>
+            )}
+          </div>
           <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors" aria-label="Close menu">
             <X size={18} />
           </button>

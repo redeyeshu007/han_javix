@@ -1,0 +1,217 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Manrope:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap');
+
+.customer-login-page {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+  font-family: 'Outfit', 'Manrope', sans-serif;
+  overflow: hidden;
+  position: relative;
+  /* Use a high quality placeholder from unsplash, architecture interior */
+  background-image: url('https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=2075&auto=format&fit=crop');
+  background-size: cover;
+  background-position: center;
+  align-items: center;
+  justify-content: center;
+}
+
+.customer-login-page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.4) 0%, rgba(15, 23, 42, 0.7) 100%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 1;
+}
+
+.customer-login-container {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 480px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 24px;
+  padding: 48px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255,255,255,0.1) inset;
+  animation: fadeUpScale 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeUpScale {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.customer-login-logo {
+  max-width: 160px;
+  margin: 0 auto 32px auto;
+  display: block;
+}
+
+.customer-login-heading {
+  font-family: 'DM Serif Display', serif;
+  font-size: 36px;
+  color: #0F172A;
+  margin-bottom: 12px;
+  text-align: center;
+  letter-spacing: -0.02em;
+}
+
+.customer-login-description {
+  font-size: 15px;
+  color: #64748B;
+  margin-bottom: 36px;
+  text-align: center;
+  line-height: 1.5;
+}
+
+.customer-form-group {
+  margin-bottom: 24px;
+  position: relative;
+}
+
+.customer-login-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.customer-login-input {
+  width: 100%;
+  height: 56px;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  background: #F8FAFC;
+  color: #0F172A;
+  padding: 0 16px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 16px;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.customer-login-input:focus {
+  outline: none;
+  border-color: #3B82F6;
+  background: #FFFFFF;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+}
+
+.customer-password-toggle {
+  position: absolute;
+  right: 16px;
+  top: 40px;
+  background: none;
+  border: none;
+  color: #64748B;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.2s;
+}
+
+.customer-password-toggle:hover {
+  color: #0F172A;
+}
+
+.customer-login-button {
+  width: 100%;
+  height: 56px;
+  background: #0F172A;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  margin-bottom: 24px;
+  font-family: 'Outfit', sans-serif;
+}
+
+.customer-login-button:hover {
+  background: #1E293B;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.2);
+}
+
+.customer-login-button:disabled {
+  background: #CBD5E1;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.customer-login-error {
+  background: #FEF2F2;
+  color: #B91C1C;
+  padding: 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  margin-bottom: 24px;
+  border: 1px solid #FCA5A5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.customer-forgot {
+  font-size: 14px;
+  color: #3B82F6;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.customer-forgot:hover {
+  color: #2563EB;
+}
+
+.builder-login-link {
+  text-align: center;
+  font-size: 14px;
+  color: #64748B;
+  margin-top: 24px;
+  border-top: 1px solid #E2E8F0;
+  padding-top: 24px;
+}
+
+.builder-login-link a {
+  color: #0F172A;
+  font-weight: 600;
+  text-decoration: none;
+  margin-left: 4px;
+  transition: color 0.2s;
+}
+
+.builder-login-link a:hover {
+  color: #3B82F6;
+  text-decoration: underline;
+}
+
+@media (max-width: 640px) {
+  .customer-login-container {
+    margin: 24px;
+    padding: 32px;
+  }
+}

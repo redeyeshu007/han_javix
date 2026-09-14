@@ -9,6 +9,7 @@ interface RoleContextType {
   activeRole: UserRole;
   activeBuilderId: string;
   activeProjectId: string;
+  activeProjectName: string;
 }
 
 const RoleContext = createContext<RoleContextType | undefined>(undefined);
@@ -23,13 +24,19 @@ export const RoleProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const activeRole = (user?.role?.toUpperCase() as UserRole) || 'SUPER_ADMIN';
   const activeBuilderId = user?.builderId || '';
-  const activeProjectId = user?.projectId || '';
+  
+  // PROJECT_ADMIN uses assignedProjectId (their single assigned project).
+  // CUSTOMER uses projectId (the project their unit belongs to).
+  // All other roles: empty string.
+  const activeProjectId = user?.assignedProjectId || user?.projectId || '';
+  const activeProjectName = user?.assignedProjectName || user?.projectName || '';
 
   return (
     <RoleContext.Provider value={{
       activeRole,
       activeBuilderId,
-      activeProjectId
+      activeProjectId,
+      activeProjectName,
     }}>
       {children}
     </RoleContext.Provider>

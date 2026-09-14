@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { ShieldAlert } from 'lucide-react';
 import { apiClient } from '../api/client';
+import { unitsApi } from '../api/services';
 
 interface ProjectAccessGuardProps {
   children: React.ReactNode;
@@ -14,6 +15,10 @@ interface ProjectAccessGuardProps {
  * Strategy: Ask the backend directly. The backend already enforces tenant isolation
  * via get_queryset. If the API returns 200, the user is allowed. If 403 or 404,
  * show Access Denied. This is the single source of truth — no mock stores.
+ *
+ * For units the guard validates through the same shared workspace promise the
+ * UnitDetail page consumes (api/sharedFetch.ts), so opening a unit fires ONE
+ * unit request total instead of a guard GET + page GET of the same unit.
  */
 const ProjectAccessGuard: React.FC<ProjectAccessGuardProps> = ({ children, type }) => {
   const { id } = useParams<{ id: string }>();
@@ -25,11 +30,11 @@ const ProjectAccessGuard: React.FC<ProjectAccessGuardProps> = ({ children, type 
       return;
     }
 
-    const endpoint = type === 'project'
-      ? `/projects/projects/${id}/`
-      : `/projects/units/${id}/`;
+    const request = type === 'project'
+      ? apiClient.get(`/projects/projects/${id}/`)
+      : unitsApi.getWorkspace(id);
 
-    apiClient.get(endpoint)
+    request
       .then(() => setStatus('allowed'))
       .catch((err) => {
         const code = err?.response?.status;

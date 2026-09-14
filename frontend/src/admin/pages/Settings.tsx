@@ -29,7 +29,6 @@ const Settings: React.FC = () => {
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [notifyEmail, setNotifyEmail] = useState(true);
   const [notifySystemAlerts, setNotifySystemAlerts] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState({ text: '', type: '' });
@@ -45,7 +44,6 @@ const Settings: React.FC = () => {
     if (user) {
       setName(user.name);
       setEmail(user.email);
-      setNotifyEmail(user.notifyEmail ?? true);
       setNotifySystemAlerts(user.notifySystemAlerts ?? true);
     }
   }, [user]);
@@ -55,7 +53,7 @@ const Settings: React.FC = () => {
     setIsSaving(true);
     setSaveMessage({ text: '', type: '' });
     try {
-      await usersApi.updateUser(user.id, { name, email, notifyEmail, notifySystemAlerts });
+      await usersApi.updateUser(user.id, { name, email, notifySystemAlerts });
       refreshUser();
       setSaveMessage({ text: 'Settings successfully saved.', type: 'success' });
       setTimeout(() => setSaveMessage({ text: '', type: '' }), 3000);
@@ -210,13 +208,7 @@ const Settings: React.FC = () => {
             </div>
 
             <div className="p-0 divide-y divide-slate-100">
-              <div className="p-6 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
-                <div className="pr-8">
-                  <div className="text-[14px] font-semibold text-[#0F172A] mb-1">Email Notifications</div>
-                  <div className="text-[13px] text-slate-500 leading-relaxed">Receive daily digest emails for new builder registrations, support tickets, and platform activity.</div>
-                </div>
-                <Toggle checked={notifyEmail} onChange={setNotifyEmail} />
-              </div>
+
               <div className="p-6 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
                 <div className="pr-8">
                   <div className="text-[14px] font-semibold text-[#0F172A] mb-1">System Alerts</div>

@@ -1,14 +1,38 @@
 import React, { useState } from 'react';
 import { X, Upload, FileText, AlertTriangle, Download, Eye, RefreshCw } from 'lucide-react';
-import { Document } from '../../types';;
 import { documentService } from '../../api/services';
+import { statusLabel, DOCUMENT_REJECTED_SLUG, DOCUMENT_APPROVED_SLUG, DOCUMENT_PENDING_REVIEW_STATUSES } from '../../utils/statusMap';
 import { useRole } from '../../context/RoleContext';
 import { ButtonLoading } from '../../components/LoadingState';
+import { inputCls, labelCls } from './unit/shared';
+
+interface BackendDocument {
+  id: string | number;
+  title?: string;
+  name?: string;
+  category?: string;
+  file?: string;
+  fileUrl?: string;
+  file_name?: string;
+  fileName?: string;
+  file_size?: number;
+  fileSize?: string;
+  uploaded_by_name?: string;
+  uploadedBy?: string;
+  created_at?: string;
+  uploadedAt?: string;
+  status?: string;
+  rejection_reason?: string;
+  rejectionReason?: string;
+  description?: string;
+  // Legacy
+  fileData?: string;
+}
 
 interface UnitDocumentManagementProps {
   unitId: string;
   projectId: string;
-  unitDocs: Document[];
+  unitDocs: BackendDocument[];
   onClose: () => void;
   onRefresh: () => void;
 }
@@ -16,67 +40,59 @@ interface UnitDocumentManagementProps {
 const CATEGORIES = [
   'Ownership & Identity Documents',
   'Municipal Certificate of Occupancy',
+  'Approved Plans',
+  'RERA Certificate',
+  'Completion Certificate',
+  'Sale Agreement',
+  'Payment Receipt',
   'Other'
 ];
 
-export const UnitDocumentManagement: React.FC<UnitDocumentManagementProps> = ({ 
-  unitId, 
-  projectId, 
-  unitDocs, 
+export const UnitDocumentManagement: React.FC<UnitDocumentManagementProps> = ({
+  unitId,
+  projectId,
+  unitDocs,
   onClose,
   onRefresh
 }) => {
   const { activeRole } = useRole();
   const [showUpload, setShowUpload] = useState(false);
-  
-  // Form State
+
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [fileData, setFileData] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileName, setFileName] = useState('');
   const [fileSize, setFileSize] = useState('');
-  const [fileType, setFileType] = useState('');
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setSelectedFile(file);
       setFileName(file.name);
       setFileSize((file.size / 1024 / 1024).toFixed(2) + ' MB');
-      setFileType(file.type || 'application/pdf');
-      
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFileData(reader.result as string);
-      };
-      reader.readAsDataURL(file);
     }
   };
 
   const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !fileData) return;
-    
+    if (!name || !selectedFile) return;
+
     setIsSubmitting(true);
     try {
       await documentService.uploadDocument({
         projectId,
         unitId,
         category,
-        documentType: fileType,
-        name,
+        title: name,
+        documentType: 'OTHER',
+        file: selectedFile,
         fileName,
-        fileType,
-        fileSize,
-        uploadedBy: (activeRole === 'BUILDER_OWNER' || activeRole === 'PROJECT_ADMIN' || activeRole === 'SUPER_ADMIN') ? 'Builder Admin' : (activeRole === 'CONTRACTOR' ? 'Contractor' : 'Customer'),
-        uploadedAt: new Date().toISOString().split('T')[0],
-        status: 'Pending',
         description,
-        fileData
       });
-      
+
       setShowUpload(false);
       resetForm();
       onRefresh();
@@ -91,10 +107,9 @@ export const UnitDocumentManagement: React.FC<UnitDocumentManagementProps> = ({
     setCategory(CATEGORIES[0]);
     setName('');
     setDescription('');
-    setFileData(null);
+    setSelectedFile(null);
     setFileName('');
     setFileSize('');
-    setFileType('');
   };
 
   const startReupload = (cat: string, n: string) => {
@@ -104,83 +119,88 @@ export const UnitDocumentManagement: React.FC<UnitDocumentManagementProps> = ({
     setShowUpload(true);
   };
 
+  // unitDocs arrive normalized at the service boundary (api/normalize.ts):
+  // name/category/fileName/uploadedAt/rejectionReason/fileUrl + raw status slug.
+  const normalizeDoc = (doc: BackendDocument) => ({
+    id: doc.id,
+    name: doc.title || doc.name || 'Untitled',
+    category: doc.category || 'General',
+    fileName: doc.file_name || doc.fileName || '',
+    uploadedAt: doc.created_at ? doc.created_at.split('T')[0] : (doc.uploadedAt || ''),
+    status: doc.status || 'UPLOADED',
+    rejectionReason: doc.rejection_reason || doc.rejectionReason,
+    fileUrl: doc.file || doc.fileUrl || doc.fileData,
+  });
+
   return (
-    <div className="modal-overlay">
-      <div className="modal-content" style={{ maxWidth: '800px', width: '90%', maxHeight: '90vh', overflowY: 'auto' }}>
-        <div className="modal-header">
-          <h2>Unit Document Management</h2>
-          <button className="icon-button" onClick={onClose} aria-label="Close"><X size={20} /></button>
+    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 w-[90%] max-w-[800px] max-h-[90vh] overflow-y-auto p-6 md:p-8">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-[18px] font-bold text-[#0F172A]">Unit Document Management</h2>
+          <button className="p-2 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors" onClick={onClose} aria-label="Close"><X size={20} /></button>
         </div>
-        
-        <div className="modal-body">
-          {!showUpload ? (
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--admin-navy)' }}>Uploaded Documents</h3>
-                <button className="btn-primary" onClick={() => setShowUpload(true)}>
+
+        {!showUpload ? (
+          <div>
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-[16px] font-semibold text-[#0F172A]">Uploaded Documents</h3>
+              {activeRole !== 'PROJECT_ADMIN' && (
+                <button className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[13px] font-bold shadow-sm transition-all" onClick={() => setShowUpload(true)}>
                   <Upload size={16} /> Upload Document
                 </button>
+              )}
+            </div>
+
+            {unitDocs.length === 0 ? (
+              <div className="text-center p-10 bg-[#F8FAFC] rounded-lg border border-dashed border-slate-300">
+                <FileText size={32} className="mx-auto mb-3 text-slate-400" />
+                <p className="text-slate-500 m-0 text-[14px]">No documents uploaded for this unit yet.</p>
               </div>
-              
-              {unitDocs.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '40px', backgroundColor: '#F8FAFC', borderRadius: '8px', border: '1px dashed #CBD5E1' }}>
-                  <FileText size={32} color="#94A3B8" style={{ marginBottom: '12px' }} />
-                  <p style={{ color: '#64748B', margin: 0 }}>No documents uploaded for this unit yet.</p>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {unitDocs.map(doc => (
-                    <div key={doc.id} style={{
-                      padding: '16px',
-                      borderRadius: '8px',
-                      border: `1px solid ${doc.status === 'Rejected' ? '#FECACA' : 'var(--admin-border)'}`,
-                      backgroundColor: doc.status === 'Rejected' ? '#FEF2F2' : '#FFFFFF',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center'
-                    }}>
-                      <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                        <div style={{ 
-                          width: '40px', height: '40px', borderRadius: '8px', 
-                          backgroundColor: '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center' 
-                        }}>
-                          <FileText size={20} color="#64748B" />
+            ) : (
+              <div className="flex flex-col gap-3">
+                {unitDocs.map(rawDoc => {
+                  const doc = normalizeDoc(rawDoc);
+                  const isRejected = doc.status === DOCUMENT_REJECTED_SLUG || doc.status === 'Rejected';
+                  return (
+                    <div key={doc.id} className={`p-4 rounded-lg border flex items-center justify-between ${isRejected ? 'border-red-200 bg-red-50' : 'border-slate-200 bg-white'}`}>
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
+                          <FileText size={20} className="text-slate-500" />
                         </div>
                         <div>
-                          <h4 style={{ margin: '0 0 4px 0', fontSize: '14px', fontWeight: 600, color: 'var(--admin-navy)' }}>{doc.name}</h4>
-                          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', fontSize: '12px', color: 'var(--admin-text-secondary)' }}>
-                            <span style={{ backgroundColor: '#F1F5F9', padding: '2px 8px', borderRadius: '12px' }}>{doc.category}</span>
+                          <h4 className="m-0 mb-1 text-[14px] font-semibold text-[#0F172A]">{doc.name}</h4>
+                          <div className="flex items-center gap-3 text-[12px] text-slate-500">
+                            <span className="bg-slate-100 px-2 py-0.5 rounded-full">{doc.category}</span>
                             <span>{doc.fileName}</span>
                             <span>{doc.uploadedAt}</span>
                           </div>
-                          {doc.status === 'Rejected' && doc.rejectionReason && (
-                            <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: '#DC2626', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          {isRejected && doc.rejectionReason && (
+                            <p className="mt-2 mb-0 text-[12px] text-red-600 flex items-center gap-1">
                               <AlertTriangle size={14} /> {doc.rejectionReason}
                             </p>
                           )}
                         </div>
                       </div>
-                      
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        <span className={`status-badge status-badge--${
-                          doc.status === 'Verified' ? 'success' :
-                          doc.status === 'Rejected' ? 'error' :
-                          'warning'
+
+                      <div className="flex items-center gap-4">
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold border ${
+                          doc.status === DOCUMENT_APPROVED_SLUG || doc.status === 'Verified' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                          isRejected ? 'bg-rose-50 text-rose-700 border-rose-200' :
+                          'bg-amber-50 text-amber-700 border-amber-200'
                         }`}>
-                          {doc.status === 'Pending' ? 'Pending Review' : doc.status}
+                          {statusLabel('document', doc.status)}
                         </span>
-                        
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          {doc.fileData && (
+
+                        <div className="flex items-center gap-2">
+                          {doc.fileUrl && (
                             <>
-                              <a href={doc.fileData} target="_blank" rel="noreferrer" className="icon-button" title="View"><Eye size={18} /></a>
-                              <a href={doc.fileData} download={doc.fileName} className="icon-button" title="Download"><Download size={18} /></a>
+                              <a href={doc.fileUrl} target="_blank" rel="noreferrer" className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors" title="View"><Eye size={18} /></a>
+                              <a href={doc.fileUrl} download={doc.fileName} className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors" title="Download"><Download size={18} /></a>
                             </>
                           )}
-                          {doc.status === 'Rejected' && (
-                            <button 
-                              className="icon-button" 
-                              style={{ color: 'var(--admin-primary)', backgroundColor: '#EEF2FF' }}
+                          {isRejected && activeRole !== 'PROJECT_ADMIN' && (
+                            <button
+                              className="p-2 rounded-lg text-[#2563EB] bg-indigo-50 hover:bg-indigo-100 transition-colors"
                               title="Re-upload"
                               onClick={() => startReupload(doc.category, doc.name)}
                             >
@@ -190,100 +210,90 @@ export const UnitDocumentManagement: React.FC<UnitDocumentManagementProps> = ({
                         </div>
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ) : (
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--admin-navy)' }}>Upload New Document</h3>
-                <button className="btn-secondary" onClick={() => { setShowUpload(false); resetForm(); }}>Back to List</button>
+                  );
+                })}
               </div>
-              
-              <form onSubmit={handleUploadSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div className="admin-form-group">
-                  <label>Document Category *</label>
-                  <select 
-                    className="admin-form-input" 
-                    value={category} 
-                    onChange={e => setCategory(e.target.value)}
-                    required
-                  >
-                    {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </div>
-                
-                <div className="admin-form-group">
-                  <label>Document Name/Title *</label>
-                  <input 
-                    type="text" 
-                    className="admin-form-input" 
-                    value={name}
-                    onChange={e => setName(e.target.value)}
-                    placeholder="e.g. Buyer Passport, Structural Sign-off..."
-                    required 
-                  />
-                </div>
-                
-                <div className="admin-form-group">
-                  <label>Description (Optional)</label>
-                  <textarea 
-                    className="admin-form-input" 
-                    value={description}
-                    onChange={e => setDescription(e.target.value)}
-                    placeholder="Add any relevant notes here..."
-                    rows={2}
-                  />
-                </div>
-                
-                <div className="admin-form-group">
-                  <label>File Upload *</label>
-                  <div style={{ 
-                    border: '1px dashed #CBD5E1', 
-                    padding: '24px', 
-                    borderRadius: '8px', 
-                    textAlign: 'center',
-                    backgroundColor: '#F8FAFC',
-                    cursor: 'pointer',
-                    position: 'relative'
-                  }}>
-                    <input 
-                      type="file" 
-                      onChange={handleFileChange} 
-                      style={{ 
-                        position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' 
-                      }} 
-                      required
-                    />
-                    {!fileName ? (
-                      <div>
-                        <Upload size={24} color="#64748B" style={{ marginBottom: '8px' }} />
-                        <p style={{ margin: 0, fontSize: '14px', color: '#1E293B', fontWeight: 500 }}>Click or drag file to upload</p>
-                        <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#64748B' }}>PDF, JPG, PNG up to 10MB</p>
-                      </div>
-                    ) : (
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
-                        <FileText size={24} color="var(--admin-primary)" />
-                        <div style={{ textAlign: 'left' }}>
-                          <p style={{ margin: 0, fontSize: '14px', fontWeight: 500, color: 'var(--admin-navy)' }}>{fileName}</p>
-                          <p style={{ margin: 0, fontSize: '12px', color: '#64748B' }}>{fileSize}</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
-                  <button type="button" className="btn-secondary" onClick={() => { setShowUpload(false); resetForm(); }}>Cancel</button>
-                  <button type="submit" className="btn-primary" disabled={isSubmitting || !fileData}>
-                    {isSubmitting ? <ButtonLoading label="Uploading..." /> : 'Submit Document'}
-                  </button>
-                </div>
-              </form>
+            )}
+          </div>
+        ) : (
+          <div>
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-[16px] font-semibold text-[#0F172A]">Upload New Document</h3>
+              <button className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-[13px] font-semibold shadow-sm transition-colors" onClick={() => { setShowUpload(false); resetForm(); }}>Back to List</button>
             </div>
-          )}
-        </div>
+
+            <form onSubmit={handleUploadSubmit} className="flex flex-col gap-4">
+              <div>
+                <label className={labelCls}>Document Category *</label>
+                <select
+                  className={inputCls()}
+                  value={category}
+                  onChange={e => setCategory(e.target.value)}
+                  required
+                >
+                  {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className={labelCls}>Document Name/Title *</label>
+                <input
+                  type="text"
+                  className={inputCls()}
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  placeholder="e.g. Buyer Passport, Structural Sign-off..."
+                  required
+                />
+              </div>
+
+              <div>
+                <label className={labelCls}>Description (Optional)</label>
+                <textarea
+                  className={inputCls()}
+                  value={description}
+                  onChange={e => setDescription(e.target.value)}
+                  placeholder="Add any relevant notes here..."
+                  rows={2}
+                />
+              </div>
+
+              <div>
+                <label className={labelCls}>File Upload *</label>
+                <div className="relative border border-dashed border-slate-300 p-6 rounded-lg text-center bg-[#F8FAFC] cursor-pointer">
+                  <input
+                    type="file"
+                    onChange={handleFileChange}
+                    className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
+                    required
+                  />
+                  {!fileName ? (
+                    <div>
+                      <Upload size={24} className="mx-auto mb-2 text-slate-500" />
+                      <p className="m-0 text-[14px] text-slate-800 font-medium">Click or drag file to upload</p>
+                      <p className="mt-1 mb-0 text-[12px] text-slate-500">PDF, JPG, PNG up to 10MB</p>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center gap-3">
+                      <FileText size={24} className="text-[#2563EB]" />
+                      <div className="text-left">
+                        <p className="m-0 text-[14px] font-medium text-[#0F172A]">{fileName}</p>
+                        <p className="m-0 text-[12px] text-slate-500">{fileSize}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 mt-3">
+                <button type="button" className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-[13px] font-semibold shadow-sm transition-colors" onClick={() => { setShowUpload(false); resetForm(); }}>Cancel</button>
+                <button type="submit" className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[13px] font-bold shadow-sm transition-all disabled:opacity-60" disabled={isSubmitting || !selectedFile}>
+                  {isSubmitting ? <ButtonLoading label="Uploading..." /> : 'Submit Document'}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
       </div>
     </div>
   );

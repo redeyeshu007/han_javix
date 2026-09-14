@@ -1,39 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { Check, ArrowRight } from 'lucide-react';
 import { AssociationTransition } from '../../types';
-import { transitionsService } from '../../services/transitionsService';;
+import { associationApi } from '../../api/services';
 import { useRole } from '../../context/RoleContext';
 
 const AssociationTransitionPage: React.FC = () => {
   const { activeBuilderId } = useRole();
   const [transition, setTransition] = useState<AssociationTransition | null>(null);
 
-  const loadData = () => {
-    const list = transitionsService.getTransitions();
-    let current = list.find(t => t.builderId === activeBuilderId);
-    if (!current) {
-      // Seed default
-      current = transitionsService.updateTransitionStep(activeBuilderId, 'Preparation');
-    }
-    setTransition(current);
+  const loadData = async () => {
+    const list = await associationApi.getTransitions();
+    if (list.length > 0) setTransition(list[0]);
   };
 
   useEffect(() => {
     loadData();
   }, [activeBuilderId]);
 
-  const handleStepChange = (step: AssociationTransition['step']) => {
-    transitionsService.updateTransitionStep(activeBuilderId, step);
+  const handleStepChange = async (step: AssociationTransition['step']) => {
+    await associationApi.updateStep(activeBuilderId, step);
     loadData();
   };
 
-  const handleItemToggle = (field: keyof Omit<AssociationTransition, 'builderId' | 'step'>) => {
+  const handleItemToggle = async (field: keyof Omit<AssociationTransition, 'builderId' | 'step'>) => {
     if (!transition) return;
-    const currentStatus = transition[field];
+    const currentStatus = (transition as any)[field];
     const nextStatus = currentStatus === 'Pending' ? 'In Progress' : 
                      currentStatus === 'In Progress' ? 'Completed' : 'Pending';
-    
-    transitionsService.updateTransitionItem(activeBuilderId, field, nextStatus);
+    await associationApi.updateItem(activeBuilderId, field as string, nextStatus);
     loadData();
   };
 

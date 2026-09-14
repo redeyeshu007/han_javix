@@ -9,11 +9,17 @@ import BuildersList from './pages/BuildersList';
 import BuilderDetail from './pages/BuilderDetail';
 import AddBuilder from './pages/AddBuilder';
 import SubscriptionPlans from './pages/SubscriptionPlans';
+import SubscriptionBilling from './pages/SubscriptionBilling';
 import Settings from './pages/Settings';
 import Checklists from './pages/Checklists';
 
 import BuilderDashboard from './pages/BuilderDashboard';
 import AccountsDashboard from './pages/AccountsDashboard';
+import AccountsPayments from './pages/AccountsPayments';
+import AccountsFinancialClearance from './pages/AccountsFinancialClearance';
+import AccountsCharges from './pages/AccountsCharges';
+import AccountsVerification from './pages/AccountsVerification';
+import AccountsCustomers from './pages/AccountsCustomers';
 import ProjectsList from './pages/ProjectsList';
 import ProjectDetail from './pages/ProjectDetail';
 import UnitDetail from './pages/UnitDetail';
@@ -40,6 +46,8 @@ import CustomerHandover from './pages/CustomerHandover';
 import CustomerCare from './pages/CustomerCare';
 import CustomerProfile from './pages/CustomerProfile';
 import CustomerNotifications from './pages/CustomerNotifications';
+import ProjectAdminDashboard from './pages/ProjectAdminDashboard';
+
 
 import ProjectAccessGuard from '../components/ProjectAccessGuard';
 
@@ -56,6 +64,7 @@ const AdminApp: React.FC = () => {
           <Route path="builders/new" element={<AddBuilder />} />
           <Route path="builders/:id" element={<BuilderDetail />} />
           <Route path="plans" element={<SubscriptionPlans />} />
+          <Route path="billing" element={<SubscriptionBilling />} />
           <Route path="checklists" element={<Checklists />} />
           <Route path="settings" element={<Settings />} />
         </Route>
@@ -103,26 +112,48 @@ const AdminApp: React.FC = () => {
         <Route path="/" element={<AdminLayout />}>
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<AccountsDashboard />} />
-          <Route path="payments" element={<CustomersList />} />
-          <Route path="clearance" element={<ProjectsList />} />
+          <Route path="payments" element={<AccountsPayments />} />
+          <Route path="charges" element={<AccountsCharges />} />
+          <Route path="verification" element={<AccountsVerification />} />
+          <Route path="clearance" element={<AccountsFinancialClearance />} />
+          <Route path="customers" element={<AccountsCustomers />} />
           <Route path="settings" element={<Settings />} />
         </Route>
       </Routes>
     );
   }
 
-  // BUILDER_OWNER, PROJECT_ADMIN, PROJECT_MANAGER, SITE_ENGINEER, CRM, ASSOCIATION_REPRESENTATIVE
+  if (activeRole === 'SITE_ENGINEER') {
+    return (
+      <Routes>
+        <Route path="/" element={<AdminLayout />}>
+          <Route index element={<Navigate to="inspections" replace />} />
+          <Route path="inspections" element={<InspectionsList />} />
+          <Route path="inspections/new" element={<StartInspection />} />
+          <Route path="inspections/:inspectionId" element={<StartInspection />} />
+          <Route path="defects" element={<DefectsList />} />
+          <Route path="defects/:id" element={<DefectDetail />} />
+          {/* View Unit: read-only unit detail. UnitDetail is role-aware and hides edit actions for SITE_ENGINEER */}
+          <Route path="units/:id" element={<UnitDetail />} />
+          <Route path="settings" element={<Settings />} />
+        </Route>
+      </Routes>
+    );
+  }
+
+  // BUILDER_OWNER, PROJECT_ADMIN, ASSOCIATION_REPRESENTATIVE
   return (
     <Routes>
       <Route path="/" element={<AdminLayout />}>
         <Route index element={<Navigate to="dashboard" replace />} />
-        <Route path="dashboard" element={<BuilderDashboard />} />
+        <Route path="dashboard" element={activeRole === 'PROJECT_ADMIN' ? <ProjectAdminDashboard /> : <BuilderDashboard />} />
         <Route path="projects" element={<ProjectsList />} />
         <Route path="projects/:id" element={<ProjectAccessGuard type="project"><ProjectDetail /></ProjectAccessGuard>} />
         <Route path="units/:id" element={<ProjectAccessGuard type="unit"><UnitDetail /></ProjectAccessGuard>} />
         <Route path="customers" element={<CustomersList />} />
         <Route path="inspections" element={<InspectionsList />} />
         <Route path="inspections/new" element={<StartInspection />} />
+        <Route path="inspections/:inspectionId" element={<StartInspection />} />
         <Route path="defects" element={<DefectsList />} />
         <Route path="defects/:id" element={<DefectDetail />} />
         <Route path="handover" element={<HandoverWorkspace />} />

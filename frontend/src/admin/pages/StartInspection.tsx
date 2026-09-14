@@ -1,97 +1,240 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { AlertTriangle, ArrowLeft } from 'lucide-react';
+import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
+import { AlertTriangle, ArrowLeft, CheckSquare } from 'lucide-react';
 import { Project, Unit, Contractor } from '../../types';
-import { projectsService } from '../../services/projectsService';
-import { contractorsService } from '../../services/contractorsService';
-import { inspectionsService } from '../../services/inspectionsService';
-import { defectsService } from '../../services/defectsService';;
+import { checklistsApi, inspectionsApi, projectsApi, unitsApi, contractorsApi, defectsApi } from '../../api/services';
+import { Button } from '../../components/ui/Button';
+import { Select, Input, Textarea } from '../../components/ui/FormElements';
 import { useAuth } from '../../context/AuthContext';
+import { useRole } from '../../context/RoleContext';
+import { ROLE_NAMESPACES, AppRole } from '../../utils/roleUtils';
 
 interface ChecklistItem {
   id: string;
   category: string;
   name: string;
-  status: 'Pass' | 'Fail' | 'N/A';
+  status: 'Pass' | 'Fail' | 'N/A' | 'Not Inspected';
   defectLogged?: boolean;
   defectTitle?: string;
   defectDesc?: string;
   defectLoc?: string;
   defectSeverity?: 'Low' | 'Medium' | 'High';
   defectContractor?: string;
+  existingResultId?: string;
 }
 
 const StartInspection: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { activeRole } = useRole();
+  const ns = ROLE_NAMESPACES[activeRole as AppRole] || '/admin';
   const [searchParams] = useSearchParams();
+  const { inspectionId: inspectionIdParam } = useParams<{ inspectionId?: string }>();
   const unitIdParam = searchParams.get('unitId');
+
+  // If opened via /inspections/:inspectionId, resolve unitId from API
+  const [resolvedUnitId, setResolvedUnitId] = React.useState<string | null>(null);
+  const [resolving, setResolving] = React.useState(!!inspectionIdParam);
+
+  useEffect(() => {
+    if (!inspectionIdParam) return;
+    const resolve = async () => {
+      try {
+        const response = await (await import('../../api/client')).default.get(`/inspections/inspections/${inspectionIdParam}/`);
+        const data = response.data;
+        const uid = data.unit ? String(data.unit) : '';
+        setResolvedUnitId(uid);
+      } catch (e) {
+        console.error('Could not resolve inspection', e);
+      } finally {
+        setResolving(false);
+      }
+    };
+    resolve();
+  }, [inspectionIdParam]);
+
+  // Effective unitId: URL param wins, then resolved from inspectionId, then null
+  const effectiveUnitIdParam = unitIdParam || resolvedUnitId;
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
-  const [contractors, setContractors] = useState<Contractor[]>([]);
+  const [contractors, setContractors] = useState<any[]>([]);
 
   // Selection
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [selectedUnitId, setSelectedUnitId] = useState('');
   
+  // Existing Inspection State
+  const [existingInspectionId, setExistingInspectionId] = useState<string | null>(null);
+  const [existingDefects, setExistingDefects] = useState<any[]>([]);
+
   // Checklist Items State
-  const [checklist, setChecklist] = useState<ChecklistItem[]>([
-    // Electrical
-    { id: 'el-1', category: 'Electrical', name: 'Power switches operate smoothly', status: 'Pass' },
-    { id: 'el-2', category: 'Electrical', name: 'All power sockets provide stable current', status: 'Pass' },
-    { id: 'el-3', category: 'Electrical', name: 'Lighting fixtures functional and hum-free', status: 'Pass' },
-    // Plumbing
-    { id: 'pl-1', category: 'Plumbing', name: 'Water pressure at faucets is optimal', status: 'Pass' },
-    { id: 'pl-2', category: 'Plumbing', name: 'Zero pipe seepage under sinks', status: 'Pass' },
-    { id: 'pl-3', category: 'Plumbing', name: 'Drainage outflow operates cleanly', status: 'Pass' },
-    // Finishes
-    { id: 'fn-1', category: 'Finishes', name: 'Wall paint is consistent, scratch-free', status: 'Pass' },
-    { id: 'fn-2', category: 'Finishes', name: 'Tiles are hollow-free and cracks-free', status: 'Pass' }
-  ]);
+  const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
+  const [loadingItems, setLoadingItems] = useState(true);
 
-  // Loading selections
+  // Loading selections and existing data
   useEffect(() => {
-    const projs = projectsService.getProjects();
-    setProjects(projs);
-    const unts = projectsService.getUnits();
-    setUnits(unts);
-    setContractors(contractorsService.getContractors());
+    const loadData = async () => {
+      try {
+        const [projs, unts, conts, chkData] = await Promise.all([
+          projectsApi.getProjects(),
+          unitsApi.getUnits(),
+          contractorsApi.getContractors(),
+          checklistsApi.getActiveChecklists()
+        ]);
+        
+        setProjects(projs);
+        setUnits(unts);
+        setContractors(conts);
 
-    if (unitIdParam) {
-      const targetUnit = unts.find(u => u.id === unitIdParam);
-      if (targetUnit) {
-        setSelectedProjectId(targetUnit.projectId);
-        setSelectedUnitId(targetUnit.id);
+        let targetUnitId = effectiveUnitIdParam;
+        if (targetUnitId) {
+          const targetUnit = unts.find(u => u.id === targetUnitId || String(u.id) === targetUnitId);
+          if (targetUnit) {
+            const projId = typeof targetUnit.project === 'object' ? targetUnit.project?.id : targetUnit.projectId;
+            if (projId) setSelectedProjectId(String(projId));
+            setSelectedUnitId(String(targetUnit.id));
+          }
+        } else if (projs.length > 0) {
+          setSelectedProjectId(String(projs[0].id));
+        }
+
+        let mapped: ChecklistItem[] = chkData.map((i: any) => ({
+          id: i.id,
+          category: i.category || 'General',
+          name: i.name,
+          description: i.description,
+          status: 'Not Inspected' as const
+        }));
+
+        if (targetUnitId) {
+          try {
+            const workspace = await unitsApi.getWorkspace(targetUnitId);
+            setExistingDefects(workspace.defects || []);
+            
+            if (workspace.latestInspection) {
+              setExistingInspectionId(String(workspace.latestInspection.id));
+              
+              const resultsMap = new Map();
+              (workspace.latestInspection.results || []).forEach((r: any) => {
+                 const cid = r.checklist_id || r.checklist?.id || r.checklist;
+                 if (cid) resultsMap.set(String(cid), r);
+              });
+              
+              mapped = mapped.map(item => {
+                const existing = resultsMap.get(String(item.id));
+                if (existing) {
+                  let status: 'Pass' | 'Fail' | 'N/A' | 'Not Inspected' = 'Not Inspected';
+                  if (existing.result === 'passed') status = 'Pass';
+                  if (existing.result === 'defect_found') status = 'Fail';
+                  if (existing.result === 'not_applicable') status = 'N/A';
+                  
+                  // Try to find if there's an existing defect for this result to pre-fill contractor/severity maybe
+                  // But just mapping remarks is fine for now
+                  return {
+                    ...item,
+                    status,
+                    defectDesc: existing.remarks || '',
+                    existingResultId: String(existing.id)
+                  };
+                }
+                return item;
+              });
+            } else {
+              mapped = mapped.map(i => ({ ...i, status: 'Pass' as const }));
+            }
+          } catch (e) {
+            console.error('Could not load unit workspace', e);
+            mapped = mapped.map(i => ({ ...i, status: 'Pass' as const }));
+          }
+        } else {
+           mapped = mapped.map(i => ({ ...i, status: 'Pass' as const }));
+        }
+
+        setChecklist(mapped);
+        setLoadingItems(false);
+      } catch (err) {
+        console.error('Failed to load inspection data', err);
+        setLoadingItems(false);
       }
-    } else if (projs.length > 0) {
-      setSelectedProjectId(projs[0].id);
-    }
-  }, [unitIdParam]);
+    };
+    
+    loadData();
+  }, [effectiveUnitIdParam]);
 
-  // Load units whenever project changes
+  // Handle Project Change -> Unit Selection Update
   useEffect(() => {
-    if (selectedProjectId) {
-      const projectUnits = projectsService.getUnits().filter(u => u.projectId === selectedProjectId);
-      if (projectUnits.length > 0 && !unitIdParam) {
-        setSelectedUnitId(projectUnits[0].id);
+    if (selectedProjectId && !effectiveUnitIdParam) {
+      const projectUnits = units.filter(u => {
+        const pid = typeof (u as any).project === 'object' ? (u as any).project?.id : u.projectId;
+        return String(pid) === String(selectedProjectId);
+      });
+      if (projectUnits.length > 0) {
+        setSelectedUnitId(String(projectUnits[0].id));
+      } else {
+        setSelectedUnitId('');
       }
     }
-  }, [selectedProjectId]);
+  }, [selectedProjectId, units, effectiveUnitIdParam]);
 
-  const projectContractors = contractors.filter(c => (c.assignedProjectIds || []).includes(selectedProjectId));
+  // When Unit selection changes without URL params (e.g. from dropdown), fetch its workspace to load existing inspection
+  useEffect(() => {
+    if (selectedUnitId && !effectiveUnitIdParam) {
+      const reloadUnitData = async () => {
+        try {
+          const workspace = await unitsApi.getWorkspace(selectedUnitId);
+          setExistingDefects(workspace.defects || []);
+          
+          if (workspace.latestInspection) {
+            setExistingInspectionId(String(workspace.latestInspection.id));
+            const resultsMap = new Map();
+            (workspace.latestInspection.results || []).forEach((r: any) => {
+               const cid = r.checklist_id || r.checklist?.id || r.checklist;
+               if (cid) resultsMap.set(String(cid), r);
+            });
+            
+            setChecklist(prev => prev.map(item => {
+              const existing = resultsMap.get(String(item.id));
+              if (existing) {
+                let status: 'Pass' | 'Fail' | 'N/A' | 'Not Inspected' = 'Not Inspected';
+                if (existing.result === 'passed') status = 'Pass';
+                if (existing.result === 'defect_found') status = 'Fail';
+                if (existing.result === 'not_applicable') status = 'N/A';
+                
+                return {
+                  ...item,
+                  status,
+                  defectDesc: existing.remarks || '',
+                  existingResultId: String(existing.id)
+                };
+              }
+              return { ...item, status: 'Pass' as const, defectDesc: '', existingResultId: undefined };
+            }));
+          } else {
+            setExistingInspectionId(null);
+            setChecklist(prev => prev.map(item => ({ ...item, status: 'Pass' as const, defectDesc: '', existingResultId: undefined })));
+          }
+        } catch(e) {}
+      };
+      reloadUnitData();
+    }
+  }, [selectedUnitId, effectiveUnitIdParam]);
 
-  const handleStatusChange = (itemId: string, status: 'Pass' | 'Fail' | 'N/A') => {
+  const projectContractors = contractors.filter(c => {
+    const assigned = c.assigned_projects || [];
+    return assigned.includes(selectedProjectId);
+  });
+
+  const handleStatusChange = (itemId: string, status: 'Pass' | 'Fail' | 'N/A' | 'Not Inspected') => {
     setChecklist(prev => prev.map(item => {
       if (item.id === itemId) {
         return {
           ...item,
           status,
-          // Initialize empty defect values if marked fail
-          defectTitle: status === 'Fail' ? `Defect: ${item.name}` : undefined,
-          defectLoc: status === 'Fail' ? 'Various locations' : undefined,
-          defectSeverity: status === 'Fail' ? 'Medium' : undefined,
-          defectContractor: status === 'Fail' ? (projectContractors[0]?.id || '') : undefined
+          defectTitle: status === 'Fail' && !item.defectTitle ? `Defect: ${item.name}` : item.defectTitle,
+          defectLoc: status === 'Fail' && !item.defectLoc ? 'Various locations' : item.defectLoc,
+          defectSeverity: status === 'Fail' && !item.defectSeverity ? 'Medium' : item.defectSeverity,
+          defectContractor: status === 'Fail' && !item.defectContractor ? (projectContractors[0]?.id || '') : item.defectContractor
         };
       }
       return item;
@@ -107,286 +250,272 @@ const StartInspection: React.FC = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedUnitId) return;
 
-    // Check if any item failed
     const failedItems = checklist.filter(item => item.status === 'Fail');
 
-    if (failedItems.length > 0) {
-      const activeProj = projects.find(p => p.id === selectedProjectId);
-      const builderId = activeProj?.builderId || 'BLD-001';
+    const statusMap: Record<string, string> = {
+      'Pass': 'passed',
+      'Fail': 'defect_found',
+      'N/A': 'not_applicable',
+      'Not Inspected': 'not_inspected'
+    };
 
-      // Create Inspection Record
-      const newInspection = inspectionsService.createInspection({
-        builderId,
-        projectId: selectedProjectId,
-        unitId: selectedUnitId,
-        inspectorId: user?.id || '',
-        status: 'Completed',
-        date: new Date().toISOString().split('T')[0],
-        notes: 'Quality Audit Inspection (Failed)'
-      });
+    const resultsInput = checklist.map(item => ({
+      checklist: item.id,
+      result: statusMap[item.status],
+      remarks: item.defectDesc || ''
+    }));
 
-      // Create defects for all failed items
-      failedItems.forEach(item => {
-        defectsService.createDefect({
-          builderId,
-          unitId: selectedUnitId,
-          projectId: selectedProjectId,
-          inspectionId: newInspection.id,
-          title: item.defectTitle || `Defect in ${item.name}`,
-          description: item.defectDesc || 'Discovered during quality audit.',
-          location: item.defectLoc || 'Unit Interior',
-          severity: item.defectSeverity || 'Medium',
-          contractorId: item.defectContractor || projectContractors[0]?.id || '',
-          evidence: []
-        });
-      });
+    try {
+      const inspectionData = {
+        unit: selectedUnitId,
+        inspection_type: 'internal',
+        status: 'completed',
+        results_input: resultsInput
+      };
+      
+      let savedInspection;
+      if (existingInspectionId) {
+        savedInspection = await inspectionsApi.updateInspection(existingInspectionId, inspectionData);
+      } else {
+        savedInspection = await inspectionsApi.createInspection(inspectionData);
+      }
 
-      // Update unit status to Defects Found, inspection Failed
-      projectsService.updateUnit(selectedUnitId, {
-        status: 'Defects Found',
-        inspectionStatus: 'Failed',
-        defectsCleared: false
-      });
-    } else {
-      const activeProj = projects.find(p => p.id === selectedProjectId);
-      const builderId = activeProj?.builderId || 'BLD-001';
+      if (failedItems.length > 0) {
+        for (const item of failedItems) {
+          const resultRecord = savedInspection.results?.find((r: any) => String(r.checklist) === String(item.id) || String(r.checklist?.id) === String(item.id) || String(r.checklist_id) === String(item.id));
+          const inspectionResultId = resultRecord ? resultRecord.id : undefined;
 
-      // Create Inspection Record
-      inspectionsService.createInspection({
-        builderId,
-        projectId: selectedProjectId,
-        unitId: selectedUnitId,
-        inspectorId: user?.id || '',
-        status: 'Completed',
-        date: new Date().toISOString().split('T')[0],
-        notes: 'Quality Audit Inspection (Passed)'
-      });
+          // Only create defect if there isn't already an open defect for this result record
+          const alreadyHasDefect = existingDefects.some(d => 
+            (String(d.inspection_result) === String(inspectionResultId) || String(d.inspectionResultId) === String(inspectionResultId)) &&
+            !['closed', 'cancelled'].includes(d.status)
+          );
 
-      // Update unit status to Approved, inspection Passed
-      projectsService.updateUnit(selectedUnitId, {
-        status: 'Approved',
-        inspectionStatus: 'Passed',
-        defectsCleared: true
-      });
+          if (!alreadyHasDefect && inspectionResultId) {
+            await defectsApi.createDefect({
+              unit: selectedUnitId,
+              inspection_result: inspectionResultId,
+              title: item.defectTitle || `Defect in ${item.name}`,
+              description: item.defectDesc || 'Discovered during quality audit.',
+              category: 'general',
+              priority: (item.defectSeverity || 'Medium').toLowerCase(),
+              status: 'open',
+              assigned_contractor: item.defectContractor || undefined
+            });
+          }
+        }
+      }
+
+      navigate(`${ns}/units/${selectedUnitId}`);
+    } catch (err) {
+      console.error('Failed to submit inspection:', err);
+      alert('Failed to submit inspection. Check console for details.');
     }
-
-    // Go back to unit details
-    navigate(`/admin/units/${selectedUnitId}`);
   };
 
+  if (resolving) return <div className="flex items-center justify-center min-h-screen text-slate-400 text-[14px]">Loading inspection…</div>;
+
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', paddingBottom: '64px' }}>
-      
-      {/* Back link */}
-      <div style={{ marginBottom: '24px' }}>
-        <button onClick={() => navigate(-1)} className="btn-secondary" style={{ padding: '8px 16px', fontSize: '13px' }}>
-          <ArrowLeft size={16} /> Cancel Inspection
-        </button>
-      </div>
+    <div className="bg-[#F8FAFC] min-h-screen p-4 md:p-6 lg:p-8 font-sans text-[#0F172A] w-full flex-1 relative z-0">
+      <div className="fixed top-0 left-0 right-0 h-[400px] bg-gradient-to-b from-[#2563EB]/5 to-transparent pointer-events-none -z-10" />
 
-      <div style={{ marginBottom: '32px' }}>
-        <h1 style={{ fontSize: '28px', fontWeight: 700, color: 'var(--admin-navy)', margin: '0 0 8px 0' }}>Conduct Snag Inspection</h1>
-        <p style={{ fontSize: '15px', color: 'var(--admin-text-secondary)', margin: 0 }}>
-          Inspect building works, run standards checkboxes, and log snags on defects.
-        </p>
-      </div>
+      <div className="max-w-[1200px] mx-auto w-full">
+        <div className="mb-6">
+          <Button variant="secondary" onClick={() => navigate(-1)} leftIcon={<ArrowLeft size={16} />} className="text-[13px] font-semibold text-slate-500 hover:text-[#2563EB] bg-transparent border-transparent hover:bg-transparent shadow-none px-0">
+            Cancel & Back
+          </Button>
+        </div>
 
-      <form onSubmit={handleSubmit}>
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 md:p-8 mb-6">
+          <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
+            <div className="flex items-start gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#2563EB] to-[#1D4ED8] flex items-center justify-center shadow-[0_8px_16px_-4px_rgba(37,99,235,0.35)] flex-shrink-0 text-white">
+                <CheckSquare size={26} />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+                    QUALITY ASSURANCE
+                  </span>
+                </div>
+                <h1 className="text-[28px] md:text-[32px] font-bold text-[#0B1F33] leading-tight">
+                  {existingInspectionId ? 'Update Snag Inspection' : 'Snag Inspection'}
+                </h1>
+                <div className="flex items-center gap-3 mt-2 flex-wrap">
+                  <span className="text-[13px] font-semibold text-slate-600">
+                    {existingInspectionId ? 'Modify existing inspection results and log new defects if any.' : 'Conduct physical inspections, log defects, and approve units.'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      <form onSubmit={handleSubmit} className="space-y-6">
         
-        {/* Step 1: Select Asset */}
-        <div style={{
-          backgroundColor: 'white',
-          border: '1px solid var(--admin-border)',
-          borderRadius: '12px',
-          padding: '24px',
-          marginBottom: '24px',
-          boxShadow: '0 2px 8px rgba(7, 26, 51, 0.02)',
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: '16px'
-        }}>
-          <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--admin-navy)', marginBottom: '8px' }}>Project</label>
-            <select 
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 md:p-8">
+          <h2 className="text-[15px] font-bold text-[#0B1F33] mb-6 flex items-center gap-2">
+            <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-[12px]">1</span>
+            Select Asset
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Select 
+              label="Project"
               value={selectedProjectId}
               onChange={(e) => setSelectedProjectId(e.target.value)}
               disabled={!!unitIdParam}
-              style={{ width: '100%', padding: '10px 14px', borderRadius: '6px', border: '1px solid var(--admin-border)', backgroundColor: 'white' }}
             >
-              {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-          </div>
+              <option value="">Select a project...</option>
+              {projects.map(p => <option key={p.id} value={String(p.id)}>{p.name}</option>)}
+            </Select>
 
-          <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--admin-navy)', marginBottom: '8px' }}>Unit</label>
-            <select 
+            <Select 
+              label="Unit"
               value={selectedUnitId}
               onChange={(e) => setSelectedUnitId(e.target.value)}
-              disabled={!!unitIdParam}
-              style={{ width: '100%', padding: '10px 14px', borderRadius: '6px', border: '1px solid var(--admin-border)', backgroundColor: 'white' }}
+              disabled={!!unitIdParam || !selectedProjectId}
             >
-              {units.filter(u => u.projectId === selectedProjectId).map(u => (
-                <option key={u.id} value={u.id}>Unit {u.name}</option>
+              <option value="">Select a unit...</option>
+              {units.filter(u => {
+                const pid = String(typeof (u as any).project === 'object' ? (u as any).project?.id : u.projectId);
+                return pid === String(selectedProjectId);
+              }).map(u => (
+                <option key={u.id} value={String(u.id)}>Unit {u.name}</option>
               ))}
-            </select>
+            </Select>
           </div>
         </div>
 
-        {/* Step 2: Checklist Matrix */}
-        <div style={{
-          backgroundColor: 'white',
-          border: '1px solid var(--admin-border)',
-          borderRadius: '12px',
-          padding: '32px',
-          boxShadow: '0 2px 8px rgba(7, 26, 51, 0.02)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '28px'
-        }}>
-          
-          <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--admin-navy)', borderBottom: '1px solid var(--admin-border)', paddingBottom: '12px', margin: 0 }}>
-            INSPECTION CHECKLIST
-          </h3>
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 md:p-8">
+          <div className="space-y-8">
+            <div>
+              <h2 className="text-[15px] font-bold text-[#0B1F33] mb-1 flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-[12px]">2</span>
+                Inspection Checklist
+              </h2>
+              <p className="text-[13px] text-slate-500 ml-8 mb-6">Review each item. Logging a defect will automatically assign it to the relevant contractor.</p>
+              <hr className="border-slate-100 mb-6" />
+            </div>
 
-          {/* Grouped by Categories */}
-          {['Electrical', 'Plumbing', 'Finishes'].map(cat => {
-            const catItems = checklist.filter(item => item.category === cat);
-            return (
-              <div key={cat}>
-                <h4 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--admin-navy)', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{cat}</h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  {catItems.map(item => (
-                    <div key={item.id} style={{
-                      padding: '16px',
-                      borderRadius: '8px',
-                      border: '1px solid var(--admin-border)',
-                      backgroundColor: '#FAFCFF'
-                    }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--admin-navy)' }}>{item.name}</span>
-                        
-                        {/* Tri-state buttons */}
-                        <div style={{ display: 'flex', gap: '4px', backgroundColor: 'var(--admin-bg)', padding: '2px', borderRadius: '6px' }}>
-                          {(['Pass', 'Fail', 'N/A'] as const).map(opt => {
-                            const isSel = item.status === opt;
-                            let btnBg = 'transparent';
-                            let btnColor = 'var(--admin-text-secondary)';
-                            if (isSel) {
-                              btnBg = opt === 'Pass' ? 'var(--admin-accent)' : opt === 'Fail' ? '#DC2626' : '#6B7C93';
-                              btnColor = 'white';
-                            }
-                            return (
-                              <button
-                                key={opt}
-                                type="button"
-                                onClick={() => handleStatusChange(item.id, opt)}
-                                style={{
-                                  padding: '6px 12px',
-                                  fontSize: '12px',
-                                  fontWeight: 600,
-                                  border: 'none',
-                                  borderRadius: '4px',
-                                  cursor: 'pointer',
-                                  backgroundColor: btnBg,
-                                  color: btnColor,
-                                  transition: 'all 0.1s ease'
-                                }}
-                              >
-                                {opt}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      {/* Expand defect subform inline if Fail selected */}
-                      {item.status === 'Fail' && (
-                        <div style={{
-                          marginTop: '16px',
-                          paddingTop: '16px',
-                          borderTop: '1px dashed var(--admin-border)',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '12px'
-                        }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#DC2626', fontSize: '12px', fontWeight: 600 }}>
-                            <AlertTriangle size={16} /> Log defect snag for this failure
-                          </div>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '12px' }}>
-                            <div>
-                              <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, marginBottom: '4px' }}>Issue Description</label>
-                              <input 
-                                type="text"
-                                value={item.defectTitle || ''}
-                                onChange={(e) => handleDefectChange(item.id, 'defectTitle', e.target.value)}
-                                style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid var(--admin-border)', fontSize: '12px' }}
-                              />
-                            </div>
-                            <div>
-                              <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, marginBottom: '4px' }}>Location/Notes</label>
-                              <input 
-                                type="text"
-                                placeholder="e.g. Master Bedroom outlet"
-                                value={item.defectLoc || ''}
-                                onChange={(e) => handleDefectChange(item.id, 'defectLoc', e.target.value)}
-                                style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid var(--admin-border)', fontSize: '12px' }}
-                              />
-                            </div>
-                          </div>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                            <div>
-                              <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, marginBottom: '4px' }}>Severity</label>
-                              <select 
-                                value={item.defectSeverity} 
-                                onChange={(e) => handleDefectChange(item.id, 'defectSeverity', e.target.value)}
-                                style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid var(--admin-border)', backgroundColor: 'white', fontSize: '12px' }}
-                              >
-                                <option value="Low">Low</option>
-                                <option value="Medium">Medium</option>
-                                <option value="High">High</option>
-                              </select>
-                            </div>
-                            <div>
-                              <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, marginBottom: '4px' }}>Assign Contractor</label>
-                              <select
-                                value={item.defectContractor}
-                                onChange={(e) => handleDefectChange(item.id, 'defectContractor', e.target.value)}
-                                style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid var(--admin-border)', backgroundColor: 'white', fontSize: '12px' }}
-                              >
-                                {projectContractors.length === 0 && <option value="">No contractors assigned to this project</option>}
-                                {projectContractors.map(c => (
-                                  <option key={c.id} value={c.id}>{c.companyName}</option>
-                                ))}
-                              </select>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
+            {loadingItems ? (
+              <div className="py-10 text-center text-slate-500">
+                Loading global inspection items...
               </div>
-            );
-          })}
+            ) : checklist.length === 0 ? (
+              <div className="py-10 text-center text-slate-500">
+                No inspection items found.
+              </div>
+            ) : (
+              Object.keys(
+                checklist.reduce((acc, item) => {
+                  if (!acc[item.category]) acc[item.category] = [];
+                  acc[item.category].push(item);
+                  return acc;
+                }, {} as Record<string, ChecklistItem[]>)
+              ).map(cat => {
+                const catItems = checklist.filter(item => item.category === cat);
+                return (
+                  <div key={cat} className="space-y-4">
+                    <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wider mb-4">
+                      {cat}
+                    </h3>
+                    
+                    <div className="bg-white rounded-lg border border-slate-200 divide-y divide-slate-100">
+                      {catItems.map(item => (
+                        <div key={item.id} className="p-4">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-slate-700">{item.name}</span>
+                            
+                            <div className="flex bg-slate-100 rounded-md p-1">
+                              {(['Pass', 'Fail', 'N/A', 'Not Inspected'] as const).map(opt => {
+                                const isSel = item.status === opt;
+                                return (
+                                  <button
+                                    key={opt}
+                                    type="button"
+                                    onClick={() => handleStatusChange(item.id, opt)}
+                                    className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+                                      isSel 
+                                        ? opt === 'Pass' ? 'bg-emerald-500 text-white shadow-sm' :
+                                          opt === 'Fail' ? 'bg-red-500 text-white shadow-sm' :
+                                          'bg-slate-600 text-white shadow-sm'
+                                        : 'text-slate-600 hover:bg-slate-200'
+                                    }`}
+                                  >
+                                    {opt === 'Not Inspected' ? 'Skip' : opt}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
 
-          {/* Form Actions */}
-          <div style={{ borderTop: '1px solid var(--admin-border)', paddingTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '16px' }}>
-            <button type="button" onClick={() => navigate(-1)} className="btn-secondary">
-              Cancel
-            </button>
-            <button type="submit" className="btn-primary">
-              Submit Quality Inspection
-            </button>
+                          {item.status === 'Fail' && (
+                            <div className="mt-4 p-4 bg-red-50 border border-red-100 rounded-lg">
+                              <h4 className="text-sm font-semibold text-red-800 flex items-center gap-2 mb-4">
+                                <AlertTriangle size={16} /> Log Defect for {item.name}
+                              </h4>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <Input 
+                                  label="Defect Title"
+                                  value={item.defectTitle || ''}
+                                  onChange={(e) => handleDefectChange(item.id, 'defectTitle', e.target.value)}
+                                  placeholder="e.g. Broken switch"
+                                  required
+                                />
+                                <Select 
+                                  label="Severity"
+                                  value={item.defectSeverity || 'Medium'}
+                                  onChange={(e) => handleDefectChange(item.id, 'defectSeverity', e.target.value)}
+                                >
+                                  <option value="Low">Low</option>
+                                  <option value="Medium">Medium</option>
+                                  <option value="High">High</option>
+                                </Select>
+                                <Select 
+                                  label="Assign Contractor"
+                                  value={item.defectContractor || ''}
+                                  onChange={(e) => handleDefectChange(item.id, 'defectContractor', e.target.value)}
+                                >
+                                  <option value="">Select Contractor...</option>
+                                  {projectContractors.map(c => <option key={c.id} value={c.id}>{c.companyName}</option>)}
+                                </Select>
+                                <div className="md:col-span-2">
+                                  <Textarea 
+                                    label="Description"
+                                    value={item.defectDesc || ''}
+                                    onChange={(e) => handleDefectChange(item.id, 'defectDesc', e.target.value)}
+                                    placeholder="Detailed description of the issue..."
+                                    rows={2}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+
+            <div className="border-t border-slate-200 pt-6 flex justify-end gap-4 mt-8">
+              <Button type="button" variant="secondary" onClick={() => navigate(-1)}>
+                Cancel
+              </Button>
+              <Button type="submit">
+                {existingInspectionId ? 'Update Inspection' : 'Submit Quality Inspection'}
+              </Button>
+            </div>
           </div>
-
         </div>
 
       </form>
-
+      </div>
     </div>
   );
 };

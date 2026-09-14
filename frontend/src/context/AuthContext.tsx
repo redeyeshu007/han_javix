@@ -21,7 +21,18 @@ const mapBackendToUser = (data: any): User => ({
   role: data.role,
   builder_company_name: data.builder_company_name,
   password: '', // Should not be accessible
-  status: data.is_active ? 'Active' : 'Inactive'
+  status: data.is_active ? 'Active' : 'Inactive',
+  // CUSTOMER portal wiring: /accounts/me/ (and the login response) carry a
+  // `unit` summary read from the real Unit.customer relationship, so
+  // CustomerHome can resolve the allocated home immediately.
+  projectId: data.unit?.project_id != null ? String(data.unit.project_id) : undefined,
+  unitId: data.unit?.unit_id != null ? String(data.unit.unit_id) : undefined,
+  unitNumber: data.unit?.unit_number || undefined,
+  projectName: data.unit?.project_name || undefined,
+  // PROJECT_ADMIN wiring: /accounts/me/ carries the single assigned project
+  // so RoleContext.activeProjectId is always correct from the first render.
+  assignedProjectId: data.assigned_project?.id != null ? String(data.assigned_project.id) : undefined,
+  assignedProjectName: data.assigned_project?.name || undefined,
 });
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -59,7 +70,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await apiClient.post('/accounts/login/', { email, password });
+      const trimmedEmail = email.trim();
+      const response = await apiClient.post('/accounts/login/', { email: trimmedEmail, password });
       
       const accessToken = response.data.access;
       if (accessToken) {
@@ -71,7 +83,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setUser(authenticatedUser);
       return authenticatedUser;
     } catch (error: any) {
-      throw new Error(error.response?.data?.non_field_errors?.[0] || 'Invalid email or password.');
+      const errorData = error.response?.data;
+      const errorMessage = 
+        errorData?.non_field_errors?.[0] || 
+        errorData?.detail || 
+        (typeof errorData === 'string' ? errorData : null) ||
+        errorData?.email?.[0] ||
+        errorData?.password?.[0] ||
+        error.message ||
+        'Invalid email or password.';
+      throw new Error(errorMessage);
     }
   };
 

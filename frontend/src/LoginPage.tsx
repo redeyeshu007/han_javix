@@ -127,8 +127,12 @@ const LoginPage: React.FC = () => {
             </button>
           </form>
 
-          <div className="login-security-text">
+          <div className="login-security-text" style={{ marginBottom: '24px' }}>
             Secure access to your Handoverly workspace.
+          </div>
+
+          <div style={{ textAlign: 'center', fontSize: '14px', color: '#64748B', borderTop: '1px solid #E2E8F0', paddingTop: '24px' }}>
+            Are you a homebuyer? <a href="/customer-login" style={{ color: '#0F172A', fontWeight: 600, textDecoration: 'none', marginLeft: '4px' }}>Customer Login</a>
           </div>
         </div>
       </div>

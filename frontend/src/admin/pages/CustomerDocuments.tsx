@@ -1,17 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FileText, Download, Eye, ShieldCheck, Upload, AlertCircle, CheckCircle, X, Search } from 'lucide-react';
+import { FileText, Download, Eye, ShieldCheck, Upload, AlertCircle, CheckCircle, X, Search, Activity } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { unitsApi, documentService } from '../../api/services';
+import { User } from '../../types/models';
+import { UnitWorkspace } from '../../api/services';
 import { PageLoading, ButtonLoading } from '../../components/LoadingState';
-import { Document } from '../../types';;
 import { friendlyStatus } from '../../utils/customerCopy';
 import '../admin.css';
 
 const CustomerDocuments: React.FC = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [unit, setUnit] = useState<any>(null);
-  const [documents, setDocuments] = useState<Document[]>([]);
+  const [workspace, setWorkspace] = useState<UnitWorkspace | null>(null);
   const [filter, setFilter] = useState('All');
   
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -27,17 +27,14 @@ const CustomerDocuments: React.FC = () => {
   const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
 
   const fetchData = async () => {
-    if (!user) return;
+    if (!user?.unitId) {
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
-      const docs = await documentService.getCustomerDocuments(user.id);
-      setDocuments(docs);
-      
-      if (user.unitId) {
-        const units = await unitsApi.getUnits(user.projectId || '');
-        const u = units.find((un: any) => un.id === user.unitId);
-        if (u) setUnit(u);
-      }
+      const data = await unitsApi.getWorkspace(user.unitId);
+      setWorkspace(data);
     } catch (error) {
       console.error('Error fetching documents', error);
     } finally {
@@ -79,7 +76,7 @@ const CustomerDocuments: React.FC = () => {
 
   const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedFile || !user) {
+    if (!selectedFile || !workspace?.unit) {
       setUploadError('Please select a file.');
       return;
     }
@@ -96,19 +93,19 @@ const CustomerDocuments: React.FC = () => {
       }
 
       await documentService.uploadDocument({
-        builderId: unit?.builderId || user.builderId,
-        projectId: user.projectId || '',
-        unitId: unit?.id || user.unitId,
-        customerId: user.id,
+        builderId: '',
+        projectId: workspace.project?.id || '',
+        unitId: workspace.unit.id,
+        customerId: workspace.customer?.id || '',
         category: 'Customer',
         documentType: docType,
         name: docName || docType,
         fileName: selectedFile.name,
         fileType: selectedFile.type,
         fileSize: (selectedFile.size / (1024 * 1024)).toFixed(2) + ' MB',
-        uploadedBy: user.name,
+        uploadedBy: user?.name || 'Customer',
         uploadedAt: new Date().toISOString().split('T')[0],
-        status: 'Pending',
+        status: 'UPLOADED',
         description: docDescription,
         fileData
       });
@@ -131,206 +128,192 @@ const CustomerDocuments: React.FC = () => {
 
   if (loading) return <PageLoading />;
 
-  const filteredDocs = filter === 'All' ? documents : documents.filter(d => d.status === filter);
+  if (!workspace?.unit) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[60vh] text-slate-500 bg-[#F8FAFC]">
+        <Activity size={64} className="opacity-20 mb-6" />
+        <h3 className="text-xl font-semibold text-slate-800 mb-2">No Documents</h3>
+        <p className="text-slate-500">You have not been assigned to a property yet.</p>
+      </div>
+    );
+  }
+
+  const { unit, documents = [] } = workspace;
+  const filteredDocs = filter === 'All' ? documents : documents.filter((d: any) => d.status === filter);
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '32px' }}>
-      
-      {/* Header section */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-        <div>
-          <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A', margin: '0 0 8px 0', letterSpacing: '-0.02em' }}>
-            Property Documents
-          </h1>
-          <p style={{ color: '#64748B', fontSize: '15px', margin: 0 }}>
-            Access and manage all important legal and technical documents for {unit?.name}.
-          </p>
-        </div>
-        <button 
-          onClick={() => setShowUploadModal(true)}
-          style={{ 
-            backgroundColor: '#0F172A', 
-            color: '#FFFFFF', 
-            border: 'none', 
-            padding: '12px 20px', 
-            borderRadius: '8px', 
-            fontWeight: 600, 
-            fontSize: '14px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            cursor: 'pointer',
-            boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'
-          }}
-        >
-          <Upload size={18} /> Upload Document
-        </button>
-      </div>
+    <div className="bg-[#F8FAFC] min-h-full p-4 md:p-6 lg:p-8 font-sans text-[#0F172A] w-full relative z-0">
+      {/* Background ambient light */}
+      <div className="absolute top-0 left-0 right-0 h-[500px] bg-gradient-to-b from-[#3B82F6]/5 to-transparent -z-10 pointer-events-none" />
 
-      {/* Main Content Area */}
-      <div style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #E2E8F0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)', overflow: 'hidden' }}>
+      <div className="max-w-[1600px] mx-auto w-full flex flex-col gap-8">
         
-        {/* Toolbar */}
-        <div style={{ padding: '24px', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            {['All', 'Verified', 'Pending', 'Rejected'].map(f => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: '20px',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  border: filter === f ? '1px solid transparent' : '1px solid #E2E8F0',
-                  backgroundColor: filter === f ? '#0F172A' : '#FFFFFF',
-                  color: filter === f ? '#FFFFFF' : '#64748B',
-                  transition: 'all 0.2s'
-                }}
-              >
-                {f === 'All' ? 'All' : friendlyStatus(f)}
-              </button>
-            ))}
+        {/* Header section */}
+        <section className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 mt-4">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-slate-900 to-slate-600 mb-2">
+              Property Documents
+            </h1>
+            <p className="text-slate-500 text-[15px] leading-relaxed max-w-2xl">
+              Access and manage all important legal and technical documents for {unit.name}.
+            </p>
           </div>
-          <div style={{ position: 'relative' }}>
-            <Search size={16} color="#94A3B8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
-            <input 
-              type="text" 
-              placeholder="Search files..." 
-              style={{
-                padding: '10px 16px 10px 36px',
-                borderRadius: '8px',
-                border: '1px solid #E2E8F0',
-                fontSize: '13px',
-                width: '240px',
-                outline: 'none',
-                backgroundColor: '#F8FAFC'
-              }}
-            />
-          </div>
-        </div>
+          <button 
+            onClick={() => setShowUploadModal(true)}
+            className="bg-slate-900 hover:bg-slate-800 text-white border-none py-3 px-5 rounded-lg font-semibold text-sm flex items-center gap-2 cursor-pointer shadow-sm transition-colors whitespace-nowrap"
+          >
+            <Upload size={18} /> Upload Document
+          </button>
+        </section>
 
-        {/* Document List */}
-        <div style={{ padding: '0' }}>
-          {filteredDocs.length === 0 ? (
-            <div style={{ padding: '64px 32px', textAlign: 'center', color: '#64748B' }}>
-              <FileText size={48} style={{ opacity: 0.2, margin: '0 auto 16px auto' }} />
-              <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#1E293B', marginBottom: '8px' }}>No documents found</h3>
-              <p>You haven't uploaded any documents matching this criteria yet.</p>
+        {/* Main Content Area */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          
+          {/* Toolbar */}
+          <div className="p-6 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex flex-wrap gap-2">
+              {['All', 'Verified', 'Pending', 'Rejected'].map(f => (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  className={`px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer transition-all ${
+                    filter === f 
+                      ? 'bg-slate-900 text-white border border-transparent shadow-sm' 
+                      : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-50'
+                  }`}
+                >
+                  {f === 'All' ? 'All' : friendlyStatus(f)}
+                </button>
+              ))}
             </div>
-          ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
-                  <th style={{ padding: '16px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Document</th>
-                  <th style={{ padding: '16px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Type</th>
-                  <th style={{ padding: '16px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</th>
-                  <th style={{ padding: '16px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Date</th>
-                  <th style={{ padding: '16px 24px', textAlign: 'right', fontSize: '12px', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredDocs.map((doc, idx) => (
-                  <tr key={doc.id} style={{ borderBottom: idx === filteredDocs.length - 1 ? 'none' : '1px solid #E2E8F0' }}>
-                    <td style={{ padding: '20px 24px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        <div style={{ width: '40px', height: '40px', borderRadius: '8px', backgroundColor: doc.status === 'Pending' ? '#FEF3C7' : doc.status === 'Rejected' ? '#FEE2E2' : '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <FileText size={20} color={doc.status === 'Pending' ? '#D97706' : doc.status === 'Rejected' ? '#EF4444' : '#3B82F6'} />
-                        </div>
-                        <div>
-                          <div style={{ fontWeight: 600, color: '#1E293B', fontSize: '14px' }}>{doc.name}</div>
-                          <div style={{ fontSize: '12px', color: '#64748B', marginTop: '4px' }}>{doc.fileSize} • {doc.fileName}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td style={{ padding: '20px 24px' }}>
-                      <span style={{ padding: '4px 10px', borderRadius: '6px', backgroundColor: '#F1F5F9', fontSize: '12px', fontWeight: 500, color: '#475569' }}>
-                        {doc.documentType}
-                      </span>
-                    </td>
-                    <td style={{ padding: '20px 24px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        {doc.status === 'Verified' && <ShieldCheck size={16} color="#10B981" />}
-                        {doc.status === 'Pending' && <AlertCircle size={16} color="#F59E0B" />}
-                        {doc.status === 'Rejected' && <X size={16} color="#EF4444" />}
-                        <span style={{ 
-                          fontSize: '13px', 
-                          fontWeight: 600,
-                          color: doc.status === 'Verified' ? '#10B981' : doc.status === 'Rejected' ? '#EF4444' : '#F59E0B'
-                        }}>
-                          {friendlyStatus(doc.status)}
-                        </span>
-                      </div>
-                      {doc.status === 'Rejected' && doc.rejectionReason && (
-                        <div style={{ fontSize: '12px', color: '#EF4444', marginTop: '4px', maxWidth: '200px' }}>
-                          {doc.rejectionReason}
-                        </div>
-                      )}
-                    </td>
-                    <td style={{ padding: '20px 24px', fontSize: '13px', color: '#64748B', fontWeight: 500 }}>
-                      {doc.uploadedAt}
-                    </td>
-                    <td style={{ padding: '20px 24px', textAlign: 'right' }}>
-                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                        {doc.fileData ? (
-                          <>
-                            <a href={doc.fileData} target="_blank" rel="noreferrer" style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid #E2E8F0', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#64748B', backgroundColor: '#FFFFFF', transition: 'all 0.2s', cursor: 'pointer' }} title="View">
-                              <Eye size={16} />
-                            </a>
-                            <a href={doc.fileData} download={doc.fileName} style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid #E2E8F0', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#64748B', backgroundColor: '#FFFFFF', transition: 'all 0.2s', cursor: 'pointer' }} title="Download">
-                              <Download size={16} />
-                            </a>
-                          </>
-                        ) : (
-                          <span style={{ fontSize: '12px', color: '#94A3B8' }}>N/A</span>
-                        )}
-                      </div>
-                    </td>
+            <div className="relative w-full sm:w-auto">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input 
+                type="text" 
+                placeholder="Search files..." 
+                className="w-full sm:w-60 py-2.5 pl-9 pr-4 rounded-lg border border-slate-200 text-[13px] outline-none bg-slate-50 focus:bg-white focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-all"
+              />
+            </div>
+          </div>
+
+          {/* Document List */}
+          <div className="p-0 overflow-x-auto">
+            {filteredDocs.length === 0 ? (
+              <div className="py-16 px-8 text-center text-slate-500">
+                <FileText size={48} className="opacity-20 mx-auto mb-4 text-slate-400" />
+                <h3 className="text-lg font-semibold text-slate-800 mb-2">No documents found</h3>
+                <p>You haven't uploaded any documents matching this criteria yet.</p>
+              </div>
+            ) : (
+              <table className="w-full border-collapse min-w-[800px]">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="py-4 px-6 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Document</th>
+                    <th className="py-4 px-6 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Type</th>
+                    <th className="py-4 px-6 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                    <th className="py-4 px-6 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Date</th>
+                    <th className="py-4 px-6 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+                </thead>
+                <tbody>
+                  {filteredDocs.map((doc: any, idx: number) => (
+                    <tr key={doc.id} className={`${idx === filteredDocs.length - 1 ? '' : 'border-b border-slate-100'} hover:bg-slate-50/50 transition-colors`}>
+                      <td className="py-5 px-6">
+                        <div className="flex items-center gap-4">
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                            doc.status === 'Pending' ? 'bg-amber-100 text-amber-600' : 
+                            doc.status === 'Rejected' ? 'bg-red-100 text-red-500' : 
+                            'bg-blue-50 text-blue-500'
+                          }`}>
+                            <FileText size={20} />
+                          </div>
+                          <div>
+                            <div className="font-semibold text-slate-800 text-sm mb-0.5">{doc.name}</div>
+                            <div className="text-xs text-slate-500">{doc.fileSize} • {doc.fileName}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-5 px-6">
+                        <span className="px-2.5 py-1 rounded-md bg-slate-100 text-xs font-medium text-slate-600 border border-slate-200">
+                          {doc.documentType}
+                        </span>
+                      </td>
+                      <td className="py-5 px-6">
+                        <div className="flex items-center gap-1.5">
+                          {doc.status === 'Verified' && <ShieldCheck size={16} className="text-emerald-500" />}
+                          {doc.status === 'Pending' && <AlertCircle size={16} className="text-amber-500" />}
+                          {doc.status === 'Rejected' && <X size={16} className="text-red-500" />}
+                          <span className={`text-[13px] font-semibold ${
+                            doc.status === 'Verified' ? 'text-emerald-600' : 
+                            doc.status === 'Rejected' ? 'text-red-600' : 
+                            'text-amber-600'
+                          }`}>
+                            {friendlyStatus(doc.status)}
+                          </span>
+                        </div>
+                        {doc.status === 'Rejected' && doc.rejectionReason && (
+                          <div className="text-xs text-red-500 mt-1 max-w-[200px]">
+                            {doc.rejectionReason}
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-5 px-6 text-[13px] text-slate-500 font-medium">
+                        {doc.uploadedAt}
+                      </td>
+                      <td className="py-5 px-6 text-right">
+                        <div className="flex gap-2 justify-end">
+                          {doc.fileData ? (
+                            <>
+                              <a href={doc.fileData} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-lg border border-slate-200 inline-flex items-center justify-center text-slate-500 bg-white hover:bg-slate-50 hover:text-blue-600 transition-colors cursor-pointer shadow-sm" title="View">
+                                <Eye size={16} />
+                              </a>
+                              <a href={doc.fileData} download={doc.fileName} className="w-8 h-8 rounded-lg border border-slate-200 inline-flex items-center justify-center text-slate-500 bg-white hover:bg-slate-50 hover:text-blue-600 transition-colors cursor-pointer shadow-sm" title="Download">
+                                <Download size={16} />
+                              </a>
+                            </>
+                          ) : (
+                            <span className="text-xs text-slate-400">N/A</span>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Upload Modal (Retained functionality, updated styling) */}
+      {/* Upload Modal */}
       {showUploadModal && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(15, 23, 42, 0.6)', zIndex: 1000, backdropFilter: 'blur(4px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center'
-        }}>
-          <div style={{
-            backgroundColor: 'white', borderRadius: '24px', width: '100%', maxWidth: '500px',
-            padding: '40px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-              <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>Upload Document</h2>
-              <button onClick={() => setShowUploadModal(false)} aria-label="Close" style={{ background: '#F1F5F9', border: 'none', cursor: 'pointer', color: '#64748B', width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="fixed inset-0 bg-slate-900/60 z-[1000] backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-[500px] p-8 md:p-10 shadow-2xl overflow-y-auto max-h-[90vh]">
+            <div className="flex justify-between items-center mb-8">
+              <h2 className="m-0 text-2xl font-bold text-slate-900 tracking-tight">Upload Document</h2>
+              <button onClick={() => setShowUploadModal(false)} aria-label="Close" className="bg-slate-100 border-none cursor-pointer text-slate-500 w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-200 hover:text-slate-800 transition-colors">
                 <X size={18} />
               </button>
             </div>
 
             {uploadSuccess ? (
-              <div style={{ textAlign: 'center', padding: '32px 0' }}>
-                <CheckCircle size={64} color="#10B981" style={{ margin: '0 auto 24px' }} />
-                <h3 style={{ color: '#0F172A', fontSize: '20px', fontWeight: 700, margin: '0 0 8px 0' }}>Upload Successful</h3>
-                <p style={{ color: '#64748B', margin: 0, fontSize: '15px' }}>Your document has been submitted for review.</p>
+              <div className="text-center py-8">
+                <CheckCircle size={64} className="text-emerald-500 mx-auto mb-6" />
+                <h3 className="text-slate-900 text-xl font-bold m-0 mb-2">Upload Successful</h3>
+                <p className="text-slate-500 m-0 text-[15px]">Your document has been submitted for review.</p>
               </div>
             ) : (
               <form onSubmit={handleUploadSubmit}>
                 {uploadError && (
-                  <div style={{ backgroundColor: '#FEF2F2', border: '1px solid #FCA5A5', color: '#B91C1C', padding: '12px 16px', borderRadius: '12px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: 500 }}>
+                  <div className="bg-red-50 border border-red-200 text-red-700 py-3 px-4 rounded-xl mb-6 flex items-center gap-2 text-sm font-medium">
                     <AlertCircle size={18} /> {uploadError}
                   </div>
                 )}
                 
-                <div style={{ marginBottom: '20px' }}>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '8px' }}>Document Type *</label>
+                <div className="mb-5">
+                  <label className="block text-[13px] font-semibold text-slate-600 mb-2">Document Type *</label>
                   <select 
-                    style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #E2E8F0', backgroundColor: '#F8FAFC', fontSize: '14px', outline: 'none' }}
+                    className="w-full py-3 px-4 rounded-xl border border-slate-200 bg-slate-50 text-sm outline-none focus:bg-white focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-all cursor-pointer"
                     value={docType} onChange={e => setDocType(e.target.value)} required
                   >
                     <option value="Address Proof">Address Proof</option>
@@ -341,61 +324,59 @@ const CustomerDocuments: React.FC = () => {
                   </select>
                 </div>
 
-                <div style={{ marginBottom: '20px' }}>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '8px' }}>Document Name *</label>
+                <div className="mb-5">
+                  <label className="block text-[13px] font-semibold text-slate-600 mb-2">Document Name *</label>
                   <input 
                     type="text" 
-                    style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #E2E8F0', backgroundColor: '#F8FAFC', fontSize: '14px', outline: 'none' }}
+                    className="w-full py-3 px-4 rounded-xl border border-slate-200 bg-slate-50 text-sm outline-none focus:bg-white focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-all"
                     value={docName} onChange={e => setDocName(e.target.value)} required placeholder="e.g. Aadhar Card" 
                   />
                 </div>
 
-                <div style={{ marginBottom: '24px' }}>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '8px' }}>File *</label>
+                <div className="mb-6">
+                  <label className="block text-[13px] font-semibold text-slate-600 mb-2">File *</label>
                   <div 
-                    style={{ 
-                      border: '2px dashed #CBD5E1', borderRadius: '16px', padding: '32px', 
-                      textAlign: 'center', cursor: 'pointer', backgroundColor: '#F8FAFC',
-                      transition: 'all 0.2s'
-                    }}
+                    className="border-2 border-dashed border-slate-300 rounded-2xl p-8 text-center cursor-pointer bg-slate-50 hover:bg-slate-100 hover:border-slate-400 transition-all"
                     onClick={() => fileInputRef.current?.click()}
                   >
-                    <input type="file" ref={fileInputRef} onChange={handleFileChange} style={{ display: 'none' }} accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" />
+                    <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" />
                     {selectedFile ? (
                       <div>
-                        <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px auto' }}>
-                          <FileText size={24} color="#3B82F6" />
+                        <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center mx-auto mb-3 shadow-sm border border-blue-100">
+                          <FileText size={24} />
                         </div>
-                        <div style={{ color: '#0F172A', fontWeight: 600, fontSize: '15px' }}>{selectedFile.name}</div>
-                        <div style={{ color: '#64748B', fontSize: '13px', marginTop: '4px' }}>
+                        <div className="text-slate-900 font-semibold text-[15px]">{selectedFile.name}</div>
+                        <div className="text-slate-500 text-[13px] mt-1">
                           {(selectedFile.size / 1024).toFixed(1)} KB &bull; {selectedFile.type.split('/')[1] || 'document'}
                         </div>
                       </div>
                     ) : (
                       <div>
-                        <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px auto' }}>
-                          <Upload size={24} color="#64748B" />
+                        <div className="w-12 h-12 rounded-xl bg-white text-slate-400 border border-slate-200 flex items-center justify-center mx-auto mb-3 shadow-sm">
+                          <Upload size={24} />
                         </div>
-                        <div style={{ color: '#0F172A', fontWeight: 600, fontSize: '15px' }}>Click to browse or drag file here</div>
-                        <div style={{ color: '#64748B', fontSize: '13px', marginTop: '4px' }}>PDF, JPG, PNG, DOCX up to 5MB</div>
+                        <div className="text-slate-800 font-semibold text-[15px]">Click to browse or drag file here</div>
+                        <div className="text-slate-500 text-[13px] mt-1">PDF, JPG, PNG, DOCX up to 5MB</div>
                       </div>
                     )}
                   </div>
                 </div>
 
-                <div style={{ marginBottom: '32px' }}>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '8px' }}>Description (Optional)</label>
+                <div className="mb-8">
+                  <label className="block text-[13px] font-semibold text-slate-600 mb-2">Description (Optional)</label>
                   <textarea 
-                    style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #E2E8F0', backgroundColor: '#F8FAFC', fontSize: '14px', outline: 'none', minHeight: '80px', resize: 'vertical' }}
+                    className="w-full py-3 px-4 rounded-xl border border-slate-200 bg-slate-50 text-sm outline-none focus:bg-white focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-all min-h-[80px] resize-y"
                     value={docDescription} onChange={e => setDocDescription(e.target.value)} placeholder="Add any additional notes here..." 
                   />
                 </div>
 
-                <div style={{ display: 'flex', gap: '16px' }}>
-                  <button type="button" onClick={() => setShowUploadModal(false)} disabled={uploading} style={{ flex: 1, padding: '14px', borderRadius: '12px', border: '1px solid #E2E8F0', backgroundColor: '#FFFFFF', color: '#475569', fontWeight: 600, fontSize: '15px', cursor: 'pointer' }}>
+                <div className="flex gap-4">
+                  <button type="button" onClick={() => setShowUploadModal(false)} disabled={uploading} className="flex-1 py-3.5 rounded-xl border border-slate-200 bg-white text-slate-600 font-semibold text-[15px] cursor-pointer hover:bg-slate-50 hover:text-slate-800 transition-colors disabled:opacity-50">
                     Cancel
                   </button>
-                  <button type="submit" disabled={uploading || !selectedFile} style={{ flex: 1, padding: '14px', borderRadius: '12px', border: 'none', backgroundColor: (uploading || !selectedFile) ? '#94A3B8' : '#0F172A', color: '#FFFFFF', fontWeight: 600, fontSize: '15px', cursor: (uploading || !selectedFile) ? 'not-allowed' : 'pointer', transition: 'background-color 0.2s' }}>
+                  <button type="submit" disabled={uploading || !selectedFile} className={`flex-1 py-3.5 rounded-xl border-none font-semibold text-[15px] transition-colors ${
+                    (uploading || !selectedFile) ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-slate-900 text-white cursor-pointer hover:bg-slate-800 shadow-sm'
+                  }`}>
                     {uploading ? <ButtonLoading label="Uploading..." /> : 'Upload Document'}
                   </button>
                 </div>

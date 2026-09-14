@@ -483,16 +483,15 @@ const AboutHandoverlySection: React.FC = () => (
           </div>
           <div className="about-editorial__stakeholders-list">
             <span className="stakeholder-badge">Builders</span>
-            <span className="stakeholder-badge">Project Managers</span>
-            <span className="stakeholder-badge">Site Teams</span>
-            <span className="stakeholder-badge">CRM Teams</span>
-            <span className="stakeholder-badge">Accounts Teams</span>
+            <span className="stakeholder-badge">Project Admins</span>
+            <span className="stakeholder-badge">Site Engineers</span>
+            <span className="stakeholder-badge">Accounts</span>
             <span className="stakeholder-badge">Contractors</span>
             <span className="stakeholder-badge">Customers</span>
             <span className="stakeholder-badge">Associations</span>
           </div>
           <p className="about-editorial__stakeholders-summary">
-            Built for builders, project managers, site teams, CRM and accounts teams, contractors, customers, and associations &mdash; Handoverly helps everyone stay aligned, responsibilities clear, and important information connected throughout the handover journey.
+            Built for builders, project admins, site teams, accounts, contractors, customers, and associations &mdash; Handoverly helps everyone stay aligned, responsibilities clear, and important information connected throughout the handover journey.
           </p>
         </div>
       </div>
@@ -1067,7 +1066,7 @@ const TestimonialsSection: React.FC = () => (
       <div className="testimonials__grid animate-on-scroll">
         {[
           { initials: '?', role: 'Builder Owner' },
-          { initials: '?', role: 'Project Manager' },
+          { initials: '?', role: 'Project Admin' },
           { initials: '?', role: 'Site Engineer' },
         ].map((t, i) => (
           <div key={i} className="testimonial-card">
@@ -1092,10 +1091,9 @@ const TestimonialsSection: React.FC = () => (
 const RolesSection: React.FC = () => {
   const roles = [
     { icon: '🏢', title: 'Builder Owners', desc: 'Monitor all projects, delays, defects, and handover progress company-wide.' },
-    { icon: '📋', title: 'Project Managers', desc: 'Coordinate departments, approve readiness, and confirm units for customer inspection.' },
-    { icon: '🔧', title: 'Site Engineers', desc: 'Update site progress, inspect units, create defects, and verify contractor work.' },
-    { icon: '💬', title: 'CRM Teams', desc: 'Schedule inspections, manage documents, coordinate payments, and collect customer acceptance.' },
-    { icon: '💰', title: 'Accounts Teams', desc: 'Update payment status, confirm financial clearance, and approve handover finances.' },
+    { icon: '📋', title: 'Project Admins', desc: 'Coordinate departments, manage project data, and coordinate customer handover schedules.' },
+    { icon: '👷', title: 'Site Teams', desc: 'Execute technical inspections, record defects, and coordinate directly with contractors.' },
+    { icon: '💰', title: 'Accounts', desc: 'Clear unit payments, upload receipts, and give financial approval for handover.' },
     { icon: '👷', title: 'Contractors', desc: 'Accept assigned defects, update work progress, and submit for reinspection.' },
     { icon: '🏠', title: 'Property Customers', desc: 'View unit progress, report inspection issues, track resolutions, and accept handover.' },
     { icon: '🏛️', title: 'Association Representatives', desc: 'Review common areas, assets, documents, vendors, and accept builder-to-association transition.' },
@@ -1164,22 +1162,10 @@ const RolesEditorialSection: React.FC = () => {
       cta: 'Explore Owner Tools'
     },
     { 
-      name: 'Project Managers', color: '#064E3B', headline: 'Keep the project moving.', 
-      desc: 'Coordinate teams, inspections, readiness, defects, and delayed work.',
-      features: ['Automated milestone tracking', 'Cross-team defect routing', 'Instant readiness reports'],
-      cta: 'Explore PM Tools'
-    },
-    { 
-      name: 'Site Engineers', color: '#7C2D12', headline: 'Turn site updates into action.', 
-      desc: 'Update progress, inspect units, upload evidence, and track defects.',
-      features: ['Mobile site inspections', 'One-click defect logging', 'Photo & evidence uploads'],
+      name: 'Site Engineers', color: '#064E3B', headline: 'Execute flawless handovers.', 
+      desc: 'Conduct structured technical inspections, capture visual evidence, and coordinate contractor defect resolution on site.',
+      features: ['Defect Logging', 'Contractor Coordination', 'Re-inspection'],
       cta: 'Explore Site Tools'
-    },
-    { 
-      name: 'CRM Teams', color: '#4C1D95', headline: 'Keep customers informed.', 
-      desc: 'Manage inspections, documents, questions, payments, and handover schedules.',
-      features: ['Automated customer updates', 'Document portal access', 'Streamlined key handover'],
-      cta: 'Explore CRM Tools'
     },
     { 
       name: 'Accounts Teams', color: '#0C4A6E', headline: 'Know what\'s financially ready.', 
@@ -1361,8 +1347,8 @@ export const Footer: React.FC = () => (
             <div className="footer-pro__col-title">Solutions</div>
             <a href="#" className="footer-pro__link">For Contractors</a>
             <a href="#" className="footer-pro__link">For Developers</a>
-            <a href="#" className="footer-pro__link">For Project Managers</a>
-            <a href="#" className="footer-pro__link">Enterprise</a>
+            <a href="#" className="footer-pro__link">For Project Admins</a>
+            <a href="#" className="footer-pro__link">For Site Teams</a>
             <a href="#" className="footer-pro__link">Consulting Firms</a>
           </div>
           <div className="footer-pro__col">

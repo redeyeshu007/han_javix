@@ -2,17 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertTriangle, Search, Filter, Eye } from 'lucide-react';
 import { Defect, Unit } from '../../types';
-import { defectsService } from '../../services/defectsService';
-import { projectsService } from '../../services/projectsService';
+import { defectsApi, unitsApi } from '../../api/services';
+import { statusLabel, toBackendStatus } from '../../utils/statusMap';
 import { useAuth } from '../../context/AuthContext';
+import { useRole } from '../../context/RoleContext';
+import { ROLE_NAMESPACES, AppRole } from '../../utils/roleUtils';
 import { canAccessDefect } from '../../utils/access';
 import { Dropdown, DropdownItem } from '../../components/ui/Dropdown';
 import { PageLoading } from '../../components/LoadingState';
 
 const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
-  const isResolved = status === 'Resolved' || status === 'Closed';
-  const isOpen = status === 'Open';
-  const isInProgress = status === 'In Progress' || status === 'Assigned';
+  // Rows carry the backend Defect.STATUS_CHOICES slug ('open', 'in_progress', …).
+  const slug = toBackendStatus('defect', status);
+  const isResolved = slug === 'resolved' || slug === 'closed';
+  const isOpen = slug === 'open';
+  const isInProgress = slug === 'in_progress' || slug === 'assigned';
   return (
     <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border
       ${isResolved ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : isOpen ? 'bg-red-50 text-red-700 border-red-200' : 'bg-amber-50 text-amber-700 border-amber-200'}
@@ -20,7 +24,7 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
       {isResolved && <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 mr-1.5"></span>}
       {isOpen && <span className="w-1.5 h-1.5 rounded-full bg-red-600 mr-1.5"></span>}
       {isInProgress && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5"></span>}
-      {status}
+      {statusLabel('defect', slug)}
     </span>
   );
 };
@@ -28,26 +32,28 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
 const DefectsList: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { activeRole } = useRole();
+  const ns = ROLE_NAMESPACES[activeRole as AppRole] || '/admin';
   const [defects, setDefects] = useState<Defect[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'All' | 'Open' | 'Assigned' | 'In Progress' | 'Resolved' | 'Closed'>('All');
+  // Filter values are backend slugs; the <option> labels display them.
+  const [statusFilter, setStatusFilter] = useState<'All' | 'open' | 'assigned' | 'in_progress' | 'resolved' | 'closed'>('All');
   const [loading, setLoading] = useState(true);
 
-  const loadDefects = () => {
-    setDefects(defectsService.getDefects().filter(d => canAccessDefect(user, d)));
-    setUnits(projectsService.getUnits());
+  const loadDefects = async () => {
+    const [fetchedDefects, fetchedUnits] = await Promise.all([
+      defectsApi.getDefects(),
+      unitsApi.getUnits(),
+    ]);
+    setDefects(fetchedDefects);
+    setUnits(fetchedUnits);
     setLoading(false);
   };
 
   useEffect(() => {
-    setTimeout(() => {
-      loadDefects();
-    }, 400);
-    const interval = setInterval(() => {
-      setDefects(defectsService.getDefects().filter(d => canAccessDefect(user, d)));
-      setUnits(projectsService.getUnits());
-    }, 5000); // Polling every 5s silently without triggering loading spinner
+    loadDefects();
+    const interval = setInterval(loadDefects, 30000);
     return () => clearInterval(interval);
   }, [user]);
 
@@ -101,11 +107,11 @@ const DefectsList: React.FC = () => {
                 className="pl-2 pr-8 py-1.5 bg-white border border-slate-200 rounded-md text-[13px] font-medium text-[#0F172A] focus:outline-none focus:ring-1 focus:ring-[#2563EB] focus:border-[#2563EB] transition-colors shadow-sm"
               >
                 <option value="All">All Statuses</option>
-                <option value="Open">Open</option>
-                <option value="Assigned">Assigned</option>
-                <option value="In Progress">In Progress</option>
-                <option value="Resolved">Resolved</option>
-                <option value="Closed">Closed</option>
+                <option value="open">Open</option>
+                <option value="assigned">Assigned</option>
+                <option value="in_progress">In Progress</option>
+                <option value="resolved">Resolved</option>
+                <option value="closed">Closed</option>
               </select>
             </div>
           </div>
@@ -126,7 +132,7 @@ const DefectsList: React.FC = () => {
                   const unit = units.find(u => u.id === d.unitId);
                   
                   const items: DropdownItem[] = [
-                    { key: '1', label: 'View Snag', icon: <Eye size={14} />, onClick: () => navigate(`/builder/defects/${d.id}`) },
+                    { key: '1', label: 'View Snag', icon: <Eye size={14} />, onClick: () => navigate(`${ns}/defects/${d.id}`) },
                   ];
 
                   return (

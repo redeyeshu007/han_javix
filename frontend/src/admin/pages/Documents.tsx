@@ -193,7 +193,7 @@ const Documents: React.FC = () => {
                           </>
                         )}
                         
-                        {doc.status === 'Pending' && (
+                        {doc.status === 'Pending' && activeRole !== 'PROJECT_ADMIN' && (
                           <>
                             <div style={{ width: '1px', height: '24px', backgroundColor: '#E2E8F0', margin: '0 4px' }} />
                             <button 
@@ -218,7 +218,7 @@ const Documents: React.FC = () => {
                         )}
                       </div>
                       
-                      {rejecting === doc.id && (
+                      {rejecting === doc.id && activeRole !== 'PROJECT_ADMIN' && (
                         <div style={{ marginTop: '12px', textAlign: 'left', backgroundColor: '#F8FAFC', padding: '12px', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
                           <input 
                             type="text" 

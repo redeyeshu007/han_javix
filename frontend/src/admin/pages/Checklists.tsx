@@ -34,7 +34,7 @@ const Checklists: React.FC = () => {
   const [name, setName] = useState('');
   const [category, setCategory] = useState('Plumbing');
   const [description, setDescription] = useState('');
-  const [status, setStatus] = useState<'Active' | 'Draft' | 'Archived'>('Active');
+  const [status, setStatus] = useState<'Active' | 'Archived'>('Active');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<any>({});
@@ -61,11 +61,11 @@ const Checklists: React.FC = () => {
       setName(checklist.name);
       setCategory(checklist.category);
       setDescription(checklist.description || '');
-      setStatus(checklist.status);
+      setStatus(checklist.status === 'Draft' ? 'Active' : checklist.status as 'Active' | 'Archived');
     } else {
       setEditingChecklist(null);
       setName('');
-      setCategory('Plumbing');
+      setCategory('General');
       setDescription('');
       setStatus('Active');
     }
@@ -158,7 +158,7 @@ const Checklists: React.FC = () => {
                 <tr className="bg-[#F8FAFC] border-b border-slate-200 text-slate-500 font-semibold text-[11px] uppercase tracking-wider">
                   <th className="px-5 py-3">Checklist Name</th>
                   <th className="px-5 py-3">Category</th>
-                  <th className="px-5 py-3">Items</th>
+                  <th className="px-5 py-3">Description</th>
                   <th className="px-5 py-3">Status</th>
                   <th className="px-5 py-3">Updated</th>
                   <th className="px-5 py-3 text-right">Actions</th>
@@ -174,8 +174,8 @@ const Checklists: React.FC = () => {
                       <span className="text-slate-600 font-medium text-[13px]">{record.category}</span>
                     </td>
                     <td className="px-5 py-3">
-                      <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-semibold text-[12px] border border-slate-200">
-                        {record.items}
+                      <span className="text-slate-500 text-[13px] truncate max-w-xs block" title={record.description}>
+                        {record.description || '-'}
                       </span>
                     </td>
                     <td className="px-5 py-3">
@@ -267,10 +267,9 @@ const Checklists: React.FC = () => {
             required
             error={errors.status}
             value={status}
-            onChange={e => setStatus(e.target.value as 'Active' | 'Draft' | 'Archived')}
+            onChange={e => setStatus(e.target.value as 'Active' | 'Archived')}
             options={[
               { value: 'Active', label: 'Active' },
-              { value: 'Draft', label: 'Draft' },
               { value: 'Archived', label: 'Archived' }
             ]}
           />

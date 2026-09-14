@@ -14,7 +14,7 @@ const CustomerNotifications: React.FC = () => {
     if (!user) return;
     try {
       setLoading(true);
-      const data = await notificationService.getNotifications(user.id);
+      const data = await notificationService.getNotifications();
       setNotifications([...data].sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()));
     } catch (error) {
       console.error('Error fetching notifications', error);

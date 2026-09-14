@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, User, Eye, AlertCircle, Home } from 'lucide-react';
-import { Customer, Unit } from '../../types';
-import { customersService } from '../../services/customersService';
-import { projectsService } from '../../services/projectsService';
+import { Search, User, Eye, Home } from 'lucide-react';
+import { Customer } from '../../types';
+import { customersApi } from '../../api/services';
 import { useRole } from '../../context/RoleContext';
+import { ROLE_NAMESPACES, AppRole } from '../../utils/roleUtils';
 import { Dropdown, DropdownItem } from '../../components/ui/Dropdown';
 import { PageLoading } from '../../components/LoadingState';
 
@@ -25,20 +25,23 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
 
 const CustomersList: React.FC = () => {
   const navigate = useNavigate();
-  const { activeBuilderId } = useRole();
+  const { activeRole } = useRole();
+  const ns = ROLE_NAMESPACES[activeRole as AppRole] || '/builder';
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [units, setUnits] = useState<Unit[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate loading for smooth transition
-    setTimeout(() => {
-      setCustomers(customersService.getCustomers(activeBuilderId));
-      setUnits(projectsService.getUnits());
+    const load = async () => {
+      // Allocated units come embedded on each team row
+      // (TeamMemberSerializer.allocated_units, read from Unit.customer) —
+      // no separate units fetch and no client-side join.
+      // For PROJECT_ADMIN, the backend already scopes to their assigned project.
+      setCustomers(await customersApi.getCustomers());
       setLoading(false);
-    }, 400);
-  }, [activeBuilderId]);
+    };
+    load();
+  }, []);
 
   const filtered = customers.filter(c => 
     c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -93,10 +96,16 @@ const CustomersList: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filtered.map(c => {
-                  const unit = units.find(u => u.id === c.unitId);
+                  const allocated = c.allocated_units || [];
                   
+                  let computedStatus = 'Pending';
+                  if (allocated.length > 0) {
+                    const allDone = allocated.every((u: any) => u.status === 'handed_over');
+                    computedStatus = allDone ? 'Complete' : 'In Progress';
+                  }
+
                   const items: DropdownItem[] = [
-                    { key: '1', label: 'View Profile', icon: <Eye size={14} />, onClick: () => navigate(`/builder/customers/${c.id}`) },
+                    { key: '1', label: 'View Profile', icon: <Eye size={14} />, onClick: () => navigate(`${ns}/customers/${c.id}`) },
                   ];
 
                   return (
@@ -104,7 +113,7 @@ const CustomersList: React.FC = () => {
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-[11px]">
-                            {c.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
+                            {c.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2)}
                           </div>
                           <div className="font-semibold text-[#0F172A] text-[13px]">{c.name}</div>
                         </div>
@@ -116,19 +125,25 @@ const CustomersList: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-5 py-3">
-                        {unit ? (
-                          <div 
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 font-semibold text-[12px] border border-blue-100 cursor-pointer hover:bg-blue-100 transition-colors"
-                            onClick={() => navigate(`/builder/units/${unit.id}`)}
-                          >
-                            <Home size={12} /> Unit {unit.name}
+                        {allocated.length > 0 ? (
+                          <div className="flex flex-col gap-1.5 items-start">
+                            {allocated.map((u: any) => (
+                              <div
+                                key={u.id}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 font-semibold text-[12px] border border-blue-100 cursor-pointer hover:bg-blue-100 transition-colors"
+                                onClick={() => navigate(`${ns}/units/${u.id}`)}
+                                title={u.floor_name ? `${u.block_name} · ${u.floor_name}` : undefined}
+                              >
+                                <Home size={12} /> Unit {u.unit_number} · {u.project_name}
+                              </div>
+                            ))}
                           </div>
                         ) : (
                           <span className="text-slate-400 text-[12px] italic">Unassigned</span>
                         )}
                       </td>
                       <td className="px-5 py-3">
-                        <StatusBadge status={c.handoverStatus} />
+                        <StatusBadge status={computedStatus} />
                       </td>
                       <td className="px-5 py-3 text-right">
                         <Dropdown items={items} />

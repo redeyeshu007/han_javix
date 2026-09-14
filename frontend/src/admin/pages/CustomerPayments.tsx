@@ -1,29 +1,55 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle2, Download, Receipt, Wallet, ChevronRight } from 'lucide-react';
+import { CheckCircle2, Download, Receipt, Wallet, ChevronRight, Activity, Home } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { unitsApi, paymentService } from '../../api/services';
+import { unitsApi, chargeService, paymentService, paymentRecordService } from '../../api/services';
+import { User, Charge, Payment } from '../../types/models';
+import { UnitWorkspace } from '../../api/services';
 import { PageLoading } from '../../components/LoadingState';
 import { UnitPaymentManagement } from '../components/UnitPaymentManagement';
+import KPIOrb from '../components/KPIOrb';
 import { friendlyStatus } from '../../utils/customerCopy';
 import '../admin.css';
 
 const CustomerPayments: React.FC = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [unit, setUnit] = useState<any>(null);
-  const [payments, setPayments] = useState<any[]>([]);
+  const [workspace, setWorkspace] = useState<UnitWorkspace | null>(null);
+  const [charges, setCharges] = useState<Charge[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]); // Clearances
+  const [paymentRecords, setPaymentRecords] = useState<any[]>([]); // Transactions
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedChargeId, setSelectedChargeId] = useState<string | undefined>();
+  const [selectedChargeAmount, setSelectedChargeAmount] = useState<number | undefined>();
+
+  const openPaymentModalForCharge = (chargeId: string, amount: number) => {
+    setSelectedChargeId(chargeId);
+    setSelectedChargeAmount(amount);
+    setShowPaymentModal(true);
+  };
+
+  const openPaymentModalGeneric = () => {
+    setSelectedChargeId(undefined);
+    setSelectedChargeAmount(undefined);
+    setShowPaymentModal(true);
+  };
 
   const fetchPayments = async () => {
-    if (!user) return;
+    if (!user?.unitId) {
+      setLoading(false);
+      return;
+    }
     try {
-      const units = await unitsApi.getUnits(user.projectId || '');
-      const activeUnit = units.find((u: any) => u.id === user.unitId);
-      if (activeUnit) {
-        setUnit(activeUnit);
-        const unitPayments = await paymentService.getPayments(activeUnit.id);
-        setPayments(unitPayments);
-      }
+      setLoading(true);
+      const [data, allCharges, allPayments, allRecords] = await Promise.all([
+        unitsApi.getWorkspace(user.unitId),
+        chargeService.getCharges(undefined, user.unitId),
+        paymentService.getPayments(user.unitId),
+        paymentRecordService.getPaymentRecords(undefined, user.unitId)
+      ]);
+      setWorkspace(data);
+      setCharges(allCharges);
+      setPayments(allPayments);
+      setPaymentRecords(allRecords);
     } catch (error) {
       console.error('Error fetching payments', error);
     } finally {
@@ -38,169 +64,196 @@ const CustomerPayments: React.FC = () => {
 
   if (loading) return <PageLoading />;
 
-  const totalValue = payments.reduce((sum, p) => sum + p.amount, 0);
-  const amountPaid = payments.filter(p => p.status === 'Cleared').reduce((sum, p) => sum + p.amount, 0);
-  const outstanding = totalValue - amountPaid;
+  if (!workspace?.unit) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[60vh] text-slate-500 bg-[#F8FAFC]">
+        <Activity size={64} className="opacity-20 mb-6" />
+        <h3 className="text-xl font-semibold text-slate-800 mb-2">No Payments Found</h3>
+        <p className="text-slate-500">You have not been assigned to a property yet.</p>
+      </div>
+    );
+  }
+
+  const { unit } = workspace;
+  const totalValue = charges.reduce((sum, c) => sum + c.amount, 0);
+  const amountPaid = payments.reduce((sum, p) => sum + p.amount, 0);
+  const outstanding = Math.max(0, totalValue - amountPaid);
 
   const progressPercentage = totalValue > 0 ? (amountPaid / totalValue) * 100 : 0;
 
+  // Combine charges and payments for the timeline/table
+  const timelineItems = [
+    ...charges.map(c => ({
+      id: `charge-${c.id}`,
+      originalId: c.id,
+      type: 'charge',
+      title: c.chargeType || (c as any).charge_type,
+      date: c.dueDate || c.createdAt,
+      amount: c.amount,
+      status: c.status
+    })),
+    ...paymentRecords.map(p => ({
+      id: `payment-${p.id}`,
+      originalId: p.id,
+      type: 'payment',
+      title: 'Payment Received',
+      date: p.paymentDate || p.createdAt,
+      amount: p.amount,
+      status: p.status
+    }))
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '32px' }}>
-      
-      {/* Header section */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-        <div>
-          <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A', margin: '0 0 8px 0', letterSpacing: '-0.02em' }}>
-            My Payments
-          </h1>
-          <p style={{ color: '#64748B', fontSize: '15px', margin: 0 }}>
-            Manage payments, download receipts, and track your property milestones.
-          </p>
-        </div>
-        
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          {unit?.paymentCleared ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', backgroundColor: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: '12px', color: '#065F46', fontWeight: 600, fontSize: '14px' }}>
-              <CheckCircle2 size={18} /> Payments Cleared
-            </div>
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', backgroundColor: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: '12px', color: '#92400E', fontWeight: 600, fontSize: '14px' }}>
-              <Wallet size={18} /> Balance Due
-            </div>
-          )}
-        </div>
-      </div>
+    <div className="bg-[#F8FAFC] min-h-full p-4 md:p-6 lg:p-8 font-sans text-[#0F172A] w-full relative z-0">
+      {/* Background ambient light */}
+      <div className="absolute top-0 left-0 right-0 h-[500px] bg-gradient-to-b from-[#3B82F6]/5 to-transparent -z-10 pointer-events-none" />
 
-      {/* Summary Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
+      <div className="max-w-[1600px] mx-auto w-full flex flex-col gap-8">
         
-        {/* Total Value */}
-        <div style={{ backgroundColor: '#0F172A', borderRadius: '20px', padding: '32px', color: '#FFFFFF', position: 'relative', overflow: 'hidden', boxShadow: '0 10px 15px -3px rgba(15, 23, 42, 0.4)' }}>
-          <div style={{ position: 'absolute', top: '-24px', right: '-24px', opacity: 0.1 }}>
-            <Building2 size={120} />
+        {/* Header section */}
+        <section className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 mt-4">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-slate-900 to-slate-600 mb-2">
+              My Payments
+            </h1>
+            <p className="text-slate-500 text-[15px] leading-relaxed">
+              Manage payments, download receipts, and track your property milestones.
+            </p>
           </div>
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            <div style={{ fontSize: '13px', fontWeight: 600, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Total Property Value</div>
-            <div style={{ fontSize: '36px', fontWeight: 800, margin: '0 0 24px 0', letterSpacing: '-0.02em' }}>${totalValue.toLocaleString()}</div>
+          
+          <div className="flex flex-wrap items-center gap-3">
+            {unit.paymentCleared ? (
+              <div className="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 font-semibold text-[15px] shadow-sm">
+                <CheckCircle2 size={18} /> Payments Cleared
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 px-4 py-2.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-700 font-semibold text-[15px] shadow-sm">
+                <Wallet size={18} /> Balance Due
+              </div>
+            )}
             
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 600, marginBottom: '8px', color: '#F8FAFC' }}>
-                <span>Paid: {progressPercentage.toFixed(0)}%</span>
-              </div>
-              <div style={{ height: '6px', backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: '4px', overflow: 'hidden' }}>
-                <div style={{ width: `${progressPercentage}%`, height: '100%', backgroundColor: '#3B82F6', borderRadius: '4px' }} />
-              </div>
-            </div>
+            {(payments.length === 0 || outstanding > 0) && (
+              <button
+                onClick={openPaymentModalGeneric}
+                className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl border-none font-semibold text-[15px] flex items-center gap-2 cursor-pointer transition-colors shadow-sm group"
+              >
+                Make Payment <ChevronRight size={18} className="transform group-hover:translate-x-1 transition-transform" />
+              </button>
+            )}
           </div>
+        </section>
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-2">
+          <KPIOrb 
+            title="Total Property Value" 
+            value={`₹${totalValue.toLocaleString('en-IN')}`} 
+            icon={Home} 
+            colorHex="#3B82F6"
+            percentage={progressPercentage}
+          />
+          <KPIOrb 
+            title="Amount Paid" 
+            value={`₹${amountPaid.toLocaleString('en-IN')}`} 
+            icon={CheckCircle2} 
+            colorHex="#10B981"
+          />
+          <KPIOrb 
+            title="Outstanding Balance" 
+            value={`₹${outstanding.toLocaleString('en-IN')}`} 
+            icon={Wallet} 
+            colorHex="#F59E0B"
+          />
         </div>
 
-        {/* Amount Paid */}
-        <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', padding: '32px', border: '1px solid #E2E8F0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
-            <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#ECFDF5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <CheckCircle2 size={24} color="#10B981" />
-            </div>
-            <div style={{ fontSize: '14px', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Amount Paid</div>
+        {/* Transaction History */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mt-2">
+          <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-white">
+            <h2 className="text-xl font-bold text-slate-900 m-0 tracking-tight">Payment History</h2>
           </div>
-          <div style={{ fontSize: '32px', fontWeight: 800, color: '#10B981', letterSpacing: '-0.02em' }}>${amountPaid.toLocaleString()}</div>
-        </div>
-
-        {/* Outstanding */}
-        <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', padding: '32px', border: '1px solid #E2E8F0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
-            <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#FFFBEB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Wallet size={24} color="#F59E0B" />
-            </div>
-            <div style={{ fontSize: '14px', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Outstanding Balance</div>
-          </div>
-          <div style={{ fontSize: '32px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>${outstanding.toLocaleString()}</div>
-          {(payments.length === 0 || outstanding > 0) && (
-            <button
-              onClick={() => setShowPaymentModal(true)}
-              style={{ marginTop: '16px', padding: '10px 16px', backgroundColor: '#0F172A', color: '#FFFFFF', borderRadius: '8px', border: 'none', fontWeight: 600, fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
-            >
-              Make Payment <ChevronRight size={16} />
-            </button>
-          )}
-        </div>
-
-      </div>
-
-      {/* Transaction History */}
-      <div style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #E2E8F0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)', overflow: 'hidden' }}>
-        <div style={{ padding: '24px', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#0F172A', margin: 0 }}>Payment History</h2>
-        </div>
-        
-        <div style={{ padding: '0' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
-                <th style={{ padding: '16px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Payment</th>
-                <th style={{ padding: '16px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Date</th>
-                <th style={{ padding: '16px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Amount</th>
-                <th style={{ padding: '16px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</th>
-                <th style={{ padding: '16px 24px', textAlign: 'right', fontSize: '12px', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Receipt</th>
-              </tr>
-            </thead>
-            <tbody>
-              {payments.map((payment, idx) => (
-                <tr key={payment.id} style={{ borderBottom: idx === payments.length - 1 ? 'none' : '1px solid #E2E8F0' }}>
-                  <td style={{ padding: '20px 24px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                      <div style={{ width: '40px', height: '40px', borderRadius: '8px', backgroundColor: '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Receipt size={20} color="#64748B" />
+          
+          <div className="p-0 overflow-x-auto">
+            <table className="w-full border-collapse min-w-[800px]">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200">
+                  <th className="py-4 px-6 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Payment</th>
+                  <th className="py-4 px-6 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Date</th>
+                  <th className="py-4 px-6 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Amount</th>
+                  <th className="py-4 px-6 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                  <th className="py-4 px-6 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {timelineItems.map((item: any, idx: number) => (
+                  <tr key={item.id} className={`${idx === timelineItems.length - 1 ? '' : 'border-b border-slate-100'} hover:bg-slate-50/50 transition-colors`}>
+                    <td className="py-5 px-6">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center shadow-sm">
+                          <Receipt size={20} className="text-slate-500" />
+                        </div>
+                        <div className="font-semibold text-slate-800 text-[15px]">{item.title}</div>
                       </div>
-                      <div style={{ fontWeight: 600, color: '#1E293B', fontSize: '15px' }}>{payment.title}</div>
-                    </div>
-                  </td>
-                  <td style={{ padding: '20px 24px', fontSize: '14px', color: '#64748B', fontWeight: 500 }}>
-                    {payment.dueDate}
-                  </td>
-                  <td style={{ padding: '20px 24px', fontSize: '15px', color: '#0F172A', fontWeight: 700 }}>
-                    ${payment.amount.toLocaleString()}
-                  </td>
-                  <td style={{ padding: '20px 24px' }}>
-                    {payment.status === 'Cleared' ? (
-                      <span style={{ padding: '6px 12px', borderRadius: '6px', backgroundColor: '#ECFDF5', color: '#065F46', fontSize: '13px', fontWeight: 600 }}>Paid</span>
-                    ) : (
-                      <span style={{ padding: '6px 12px', borderRadius: '6px', backgroundColor: '#FFFBEB', color: '#92400E', fontSize: '13px', fontWeight: 600 }}>{friendlyStatus(payment.status)}</span>
-                    )}
-                  </td>
-                  <td style={{ padding: '20px 24px', textAlign: 'right' }}>
-                    {payment.status === 'Cleared' ? (
-                      <button style={{ width: '36px', height: '36px', borderRadius: '8px', border: '1px solid #E2E8F0', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#3B82F6', backgroundColor: '#FFFFFF', transition: 'all 0.2s', cursor: 'pointer' }} title="Download Receipt">
-                        <Download size={18} />
-                      </button>
-                    ) : (
-                      <span style={{ fontSize: '13px', color: '#94A3B8', fontWeight: 500 }}>-</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-              {payments.length === 0 && (
-                <tr>
-                  <td colSpan={5} style={{ textAlign: 'center', padding: '64px', color: '#64748B' }}>
-                    <Receipt size={48} style={{ opacity: 0.2, margin: '0 auto 16px auto' }} />
-                    <div style={{ fontSize: '16px', fontWeight: 600, color: '#1E293B' }}>No payment records</div>
-                    <div style={{ fontSize: '14px' }}>Your payment milestones will appear here.</div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                    </td>
+                    <td className="py-5 px-6 text-[14px] text-slate-500 font-medium">
+                      {new Date(item.date).toLocaleDateString()}
+                    </td>
+                    <td className="py-5 px-6 text-[15px] text-slate-900 font-bold">
+                      ₹{item.amount.toLocaleString('en-IN')}
+                    </td>
+                    <td className="py-5 px-6">
+                      {item.status === 'CLEARED' || item.status === 'PAID' ? (
+                        <span className="px-3 py-1.5 rounded-md bg-emerald-50 text-emerald-600 border border-emerald-200 text-[13px] font-semibold shadow-sm">Paid</span>
+                      ) : (
+                        <span className="px-3 py-1.5 rounded-md bg-amber-50 text-amber-600 border border-amber-200 text-[13px] font-semibold shadow-sm">{friendlyStatus(item.status)}</span>
+                      )}
+                    </td>
+                    <td className="py-5 px-6 text-right">
+                      {item.type === 'payment' ? (
+                        <button className="w-9 h-9 rounded-lg border border-slate-200 inline-flex items-center justify-center text-blue-600 bg-white hover:bg-blue-50 hover:border-blue-200 transition-colors cursor-pointer shadow-sm ml-auto" title="Download Receipt">
+                          <Download size={18} />
+                        </button>
+                      ) : (
+                        (item.status !== 'PAID' && item.status !== 'CLEARED') ? (
+                          <button 
+                            onClick={() => openPaymentModalForCharge(item.originalId, item.amount)}
+                            className="px-3 py-1.5 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-semibold text-[13px] transition-colors ml-auto cursor-pointer"
+                          >
+                            Pay
+                          </button>
+                        ) : (
+                          <span className="text-[13px] text-slate-400 font-medium">-</span>
+                        )
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {timelineItems.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="text-center py-16 px-8 text-slate-500">
+                      <Receipt size={48} className="opacity-20 mx-auto mb-4 text-slate-400" />
+                      <div className="text-lg font-semibold text-slate-800 mb-2">No payment records</div>
+                      <div className="text-sm">Your payment milestones will appear here.</div>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
 
       {showPaymentModal && unit && (
         <UnitPaymentManagement
           unitId={unit.id}
           projectId={unit.projectId}
-          customerId={unit.customerId}
+          customerId={unit.customerId || ''}
+          clearanceId={payments[0]?.id}
+          chargeId={selectedChargeId}
+          chargeAmount={selectedChargeAmount}
           onClose={() => setShowPaymentModal(false)}
           onRefresh={fetchPayments}
         />
       )}
+      </div>
     </div>
   );
 };

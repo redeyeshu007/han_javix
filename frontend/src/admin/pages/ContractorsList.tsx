@@ -182,7 +182,7 @@ const ContractorsList: React.FC = () => {
             Manage external contractors and service partners.
           </p>
         </div>
-        {(activeRole === 'BUILDER_OWNER' || activeRole === 'SUPER_ADMIN' || activeRole === 'PROJECT_MANAGER' || activeRole === 'PROJECT_ADMIN') && (
+        {(activeRole === 'BUILDER_OWNER' || activeRole === 'SUPER_ADMIN' || activeRole === 'PROJECT_ADMIN') && (
           <button className="btn-primary" onClick={() => setShowAddContractor(true)}>
             <Plus size={16} /> Add Contractor
           </button>

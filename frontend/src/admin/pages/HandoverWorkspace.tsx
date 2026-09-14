@@ -2,10 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Key, Check, X, ArrowRight } from 'lucide-react';
 import { Unit, Project } from '../../types';
-import { projectsService } from '../../services/projectsService';
-import { documentsService } from '../../services/documentsService';
-import { defectsService } from '../../services/defectsService';
-import { paymentsService } from '../../services/paymentsService';
+import { unitsApi, projectsApi, defectsApi, paymentService, documentService } from '../../api/services';
 import { computeHandoverReadiness } from '../../utils/handoverReadiness';
 import { PageLoading } from '../../components/LoadingState';
 
@@ -48,18 +45,28 @@ const HandoverWorkspace: React.FC = () => {
   const [defects, setDefects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const loadData = () => {
-    setUnits(projectsService.getUnits());
-    setProjects(projectsService.getProjects());
-    setDocuments(documentsService.getDocuments());
-    setDefects(defectsService.getDefects());
-    if (paymentsService.getPayments) setPayments(paymentsService.getPayments());
-    setLoading(false);
+  const loadData = async () => {
+    try {
+      const [fetchedUnits, fetchedProjects, fetchedDefects, fetchedDocs, fetchedPayments] = await Promise.all([
+        unitsApi.getUnits(),
+        projectsApi.getProjects(),
+        defectsApi.getDefects(),
+        documentService.getDocuments(),
+        paymentService.getPayments(),
+      ]);
+      setUnits(fetchedUnits);
+      setProjects(fetchedProjects);
+      setDefects(fetchedDefects);
+      setDocuments(fetchedDocs);
+      setPayments(fetchedPayments);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    setTimeout(loadData, 400);
-    const interval = setInterval(loadData, 5000);
+    loadData();
+    const interval = setInterval(loadData, 30000);
     return () => clearInterval(interval);
   }, []);
 

@@ -7,6 +7,8 @@ import { Dropdown, DropdownItem } from '../../components/ui/Dropdown';
 import { projectsApi } from '../../api/services';
 import { PageLoading } from '../../components/LoadingState';
 import { Input, Select } from '../../components/ui/FormElements';
+import { useRole } from '../../context/RoleContext';
+import { ROLE_NAMESPACES } from '../../utils/roleUtils';
 
 const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
   let bgColor = 'bg-slate-50 text-slate-700 border-slate-200';
@@ -50,6 +52,7 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
 
 const ProjectsList: React.FC = () => {
   const navigate = useNavigate();
+  const { activeRole, activeProjectId } = useRole();
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -60,6 +63,7 @@ const ProjectsList: React.FC = () => {
   // New project form state
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectType, setNewProjectType] = useState('apartment');
+  const [newProjectTypeOther, setNewProjectTypeOther] = useState('');
   const [newStatus, setNewStatus] = useState('active');
   const [newRera, setNewRera] = useState('');
   const [errors, setErrors] = useState<any>({});
@@ -77,14 +81,36 @@ const ProjectsList: React.FC = () => {
   };
 
   useEffect(() => {
+    if (activeRole === 'PROJECT_ADMIN' && activeProjectId) {
+      navigate(`${ROLE_NAMESPACES['PROJECT_ADMIN']}/projects/${activeProjectId}`, { replace: true });
+      return;
+    }
     fetchData();
-  }, []);
+  }, [activeRole, activeProjectId, navigate]);
+
+  if (activeRole === 'PROJECT_ADMIN') {
+    if (activeProjectId) {
+      return <PageLoading />;
+    }
+    return (
+      <div className="bg-[#F8FAFC] min-h-screen p-4 md:p-6 lg:p-8 font-sans text-[#0F172A] w-full flex-1 flex items-center justify-center">
+        <div className="text-center p-10 bg-white rounded-2xl shadow-sm border border-slate-200 max-w-md mx-auto">
+          <Briefcase size={40} className="mx-auto mb-4 text-slate-300" />
+          <h2 className="text-[20px] font-bold text-[#0F172A] mb-2">No Project Assigned</h2>
+          <p className="text-[14px] text-slate-500">
+            You have not been assigned to manage any project yet. Please contact the Builder Owner or Super Admin to assign you to a project.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const handleAction = async (project: any, action: 'view' | 'edit' | 'archive') => {
+    const ns = ROLE_NAMESPACES[activeRole as any] || '/builder';
     if (action === 'view') {
-      navigate(`/builder/projects/${project.id}`);
+      navigate(`${ns}/projects/${project.id}`);
     } else if (action === 'edit') {
-      navigate(`/builder/projects/${project.id}?edit=true`);
+      navigate(`${ns}/projects/${project.id}?edit=true`);
     } else if (action === 'archive') {
       try {
         await projectsApi.updateProject(project.id, { status: 'archived' });
@@ -98,6 +124,9 @@ const ProjectsList: React.FC = () => {
   const handleCreateProject = async () => {
     const newErrors: any = {};
     if (!newProjectName.trim()) newErrors.newProjectName = 'Required';
+    if (newProjectType === 'other' && !newProjectTypeOther.trim()) {
+      newErrors.newProjectTypeOther = 'Please specify the custom project type';
+    }
     
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) return;
@@ -107,11 +136,13 @@ const ProjectsList: React.FC = () => {
       await projectsApi.createProject({
         name: newProjectName,
         project_type: newProjectType,
+        project_type_other: newProjectType === 'other' ? newProjectTypeOther : undefined,
         status: newStatus,
         rera_number: newRera,
         address: 'TBD'
       });
       setNewProjectName('');
+      setNewProjectTypeOther('');
       setNewRera('');
       setIsModalOpen(false);
       fetchData();
@@ -143,13 +174,15 @@ const ProjectsList: React.FC = () => {
               Manage your developments and property assets.
             </p>
           </div>
-          <button 
-            onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center justify-center px-4 py-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[14px] font-medium rounded-lg shadow-sm transition-colors"
-          >
-            <Plus size={16} className="mr-1.5" strokeWidth={2.5} />
-            Add Project
-          </button>
+          <div>
+            <button 
+              onClick={() => setIsModalOpen(true)}
+              className="inline-flex items-center justify-center px-4 py-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[14px] font-medium rounded-lg shadow-sm transition-colors"
+            >
+              <Plus size={16} className="mr-1.5" strokeWidth={2.5} />
+              Add Project
+            </button>
+          </div>
         </section>
 
         {/* Table Card */}
@@ -182,12 +215,15 @@ const ProjectsList: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredData.map(record => {
-                  const items: DropdownItem[] = [
-                    { key: '1', label: 'View Details', icon: <Eye size={14} />, onClick: () => handleAction(record, 'view') },
+                  let items: DropdownItem[] = [
+                    { key: '1', label: 'View Details', icon: <Eye size={14} />, onClick: () => handleAction(record, 'view') }
+                  ];
+
+                  items.push(
                     { key: '2', label: 'Edit Project', icon: <Edit2 size={14} />, onClick: () => handleAction(record, 'edit') },
                     { key: 'div', label: '', divider: true },
-                    { key: '3', label: 'Archive', icon: <Pause size={14} />, danger: true, onClick: () => handleAction(record, 'archive') },
-                  ];
+                    { key: '3', label: 'Archive', icon: <Pause size={14} />, danger: true, onClick: () => handleAction(record, 'archive') }
+                  );
 
                   return (
                     <tr key={record.id} className="hover:bg-slate-50/50 transition-colors group">
@@ -200,7 +236,9 @@ const ProjectsList: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-5 py-3 text-slate-500 text-[13px] capitalize">
-                        {record.project_type.replace('_', ' ')}
+                        {record.project_type === 'other' && record.project_type_other
+                          ? record.project_type_other
+                          : record.project_type.replace('_', ' ')}
                       </td>
                       <td className="px-5 py-3 text-slate-500 text-[13px]">
                         {record.rera_number || '-'}
@@ -269,9 +307,20 @@ const ProjectsList: React.FC = () => {
                 { value: 'apartment', label: 'Apartment' },
                 { value: 'villa', label: 'Villa' },
                 { value: 'commercial', label: 'Commercial' },
-                { value: 'mixed_use', label: 'Mixed Use' }
+                { value: 'mixed_use', label: 'Mixed Use' },
+                { value: 'other', label: 'Other' }
               ]}
             />
+            {newProjectType === 'other' && (
+              <Input 
+                label="Custom Project Type" 
+                required 
+                error={errors.newProjectTypeOther} 
+                value={newProjectTypeOther} 
+                onChange={e => setNewProjectTypeOther(e.target.value)} 
+                placeholder="e.g. Shopping Mall" 
+              />
+            )}
             <Select 
               label="Initial Status" 
               value={newStatus} 

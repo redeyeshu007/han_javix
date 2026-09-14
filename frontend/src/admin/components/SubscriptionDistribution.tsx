@@ -56,12 +56,14 @@ const SubscriptionDistribution: React.FC<SubscriptionDistributionProps> = ({ dat
   const colors = ['#2563EB', '#00B5B8', '#7C5CFC', '#F59E0B', '#10B981'];
   
   const displayData = data.length > 0 ? data.map((d, idx) => ({
-    name: d.subscription_plan__name,
+    // New DashboardView returns {name, count, id}; old Django aggregate returned {subscription_plan__name, count}
+    name: d.name || d.subscription_plan__name || 'Unknown Plan',
     value: d.count,
     color: colors[idx % colors.length]
   })) : [
     { name: 'No Plans Found', value: 1, color: '#E2E8F0' } // Fallback empty state
   ];
+
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 md:p-8 h-full flex flex-col relative overflow-hidden group">

@@ -68,7 +68,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
 Textarea.displayName = 'Textarea';
 
 export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement>, BaseInputProps {
-  options: { value: string; label: string }[];
+  options?: { value: string; label: string }[];
 }
 export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
   ({ label, error, helperText, className = '', options, ...props }, ref) => {
@@ -86,7 +86,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           `} 
           {...props}
         >
-          {options.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+          {options ? options.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>) : props.children}
         </select>
         {error && <div className="text-[12px] font-medium text-red-500">{error}</div>}
         {helperText && !error && <div className="text-[12px] text-slate-500">{helperText}</div>}

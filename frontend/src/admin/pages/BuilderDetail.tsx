@@ -33,9 +33,9 @@ const BuilderDetail: React.FC = () => {
 
   const [loading, setLoading] = useState(true);
   const [builder, setBuilder] = useState<Builder | null>(null);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [unitCount, setUnitCount] = useState(0);
-  const [userCount, setUserCount] = useState(0);
+  const [usage, setUsage] = useState<any>(null);
+  const [limits, setLimits] = useState<any>(null);
+  const [projects, setProjects] = useState<any[]>([]);
   
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -45,22 +45,23 @@ const BuilderDetail: React.FC = () => {
     if (!id) return;
     try {
       setLoading(true);
-      const [builders, projectList, units, users] = await Promise.all([
-        buildersApi.getBuilders(),
-        projectsApi.getProjects(id),
-        unitsApi.getUnits(),
-        usersApi.getUsers()
-      ]);
-      const found = builders.find((b: Builder) => b.id === id) || null;
-      setBuilder(found);
-      setProjects(projectList);
-      setUnitCount(units.filter((u: any) => projectList.some((p: Project) => p.id === u.projectId)).length);
-      setUserCount(users.filter((u: any) => u.builderId === id).length);
-      if (found) {
-        setForm({ name: found.name, contact: found.contact, email: found.email, phone: found.phone, address: found.address });
+      const details = await buildersApi.getBuilderDetails(id);
+      setBuilder(details.builder);
+      setUsage(details.usage);
+      setLimits(details.limits);
+      setProjects(details.projects || []);
+      
+      if (details.builder) {
+        setForm({ 
+          name: details.builder.name, 
+          contact: details.builder.contact, 
+          email: details.builder.email, 
+          phone: details.builder.phone, 
+          address: details.builder.address 
+        });
       }
     } catch (error) {
-      console.error('Failed to load builder', error);
+      console.error('Failed to load builder details', error);
     } finally {
       setLoading(false);
     }
@@ -179,21 +180,37 @@ const BuilderDetail: React.FC = () => {
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row divide-y sm:divide-y-0 sm:divide-x divide-slate-100 mb-8 overflow-hidden">
           <div className="flex-1 p-6 flex flex-col justify-center">
             <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Total Projects</div>
-            <div className="text-[28px] font-bold text-[#0F172A] leading-none">{projects.length}</div>
+            <div className="text-[28px] font-bold text-[#0F172A] leading-none">
+              {usage?.projects || 0}
+              {limits?.max_projects && <span className="text-sm text-slate-400 font-normal ml-1">/ {limits.max_projects}</span>}
+            </div>
           </div>
           <div className="flex-1 p-6 flex flex-col justify-center">
             <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Total Units</div>
-            <div className="text-[28px] font-bold text-[#0F172A] leading-none">{unitCount}</div>
+            <div className="text-[28px] font-bold text-[#0F172A] leading-none">
+              {usage?.units || 0}
+              {limits?.max_units && <span className="text-sm text-slate-400 font-normal ml-1">/ {limits.max_units}</span>}
+            </div>
           </div>
           <div className="flex-1 p-6 flex flex-col justify-center">
             <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Active Users</div>
-            <div className="text-[28px] font-bold text-[#0F172A] leading-none">{userCount}</div>
+            <div className="text-[28px] font-bold text-[#0F172A] leading-none">
+              {usage?.active_users || 0}
+              {limits?.max_users && <span className="text-sm text-slate-400 font-normal ml-1">/ {limits.max_users}</span>}
+            </div>
+          </div>
+          <div className="flex-1 p-6 flex flex-col justify-center">
+            <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Storage Used</div>
+            <div className="text-[28px] font-bold text-[#0F172A] leading-none">
+              {usage?.storage_used_gb || 0} <span className="text-sm text-slate-500 font-medium">GB</span>
+              {limits?.storage_limit_gb && <span className="text-sm text-slate-400 font-normal ml-1">/ {limits.storage_limit_gb}</span>}
+            </div>
           </div>
           <div className="flex-1 p-6 flex flex-col justify-center bg-slate-50/50">
             <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Current Plan</div>
             <div className="text-[18px] font-bold text-[#2563EB] flex items-center gap-2 mt-1">
               <CreditCard size={18} />
-              {builder.plan}
+              {builder.plan || 'Free'}
             </div>
           </div>
         </div>

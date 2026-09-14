@@ -2,9 +2,7 @@ export type AppRole =
   | 'SUPER_ADMIN'
   | 'BUILDER_OWNER'
   | 'PROJECT_ADMIN'
-  | 'PROJECT_MANAGER'
   | 'SITE_ENGINEER'
-  | 'CRM'
   | 'ACCOUNTS'
   | 'CONTRACTOR'
   | 'CUSTOMER'
@@ -14,9 +12,8 @@ export const ROLE_NAMESPACES: Record<string, string> = {
   SUPER_ADMIN: '/admin',
   BUILDER_OWNER: '/builder',
   PROJECT_ADMIN: '/project-admin',
-  PROJECT_MANAGER: '/project-manager',
+  // Site Engineer routes live inside AdminApp served at /site-engineer
   SITE_ENGINEER: '/site-engineer',
-  CRM: '/crm',
   ACCOUNTS: '/accounts',
   CONTRACTOR: '/contractor',
   CUSTOMER: '/customer',
@@ -27,5 +24,10 @@ export const getDashboardRoute = (role: string): string => {
   const normalizedRole = role ? role.toUpperCase() : '';
   const namespace = ROLE_NAMESPACES[normalizedRole];
   if (!namespace) return '/login'; // Fallback if role is unknown
+  
+  if (normalizedRole === 'SITE_ENGINEER') {
+    return `${namespace}/inspections`;
+  }
+  
   return `${namespace}/dashboard`;
 };

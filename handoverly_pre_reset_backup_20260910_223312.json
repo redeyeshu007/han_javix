@@ -1,0 +1,1601 @@
+[
+{
+  "model": "accounts.user",
+  "pk": 1,
+  "fields": {
+    "password": "pbkdf2_sha256$1000000$grjSfW8G2Z6GRE9VAiyTAg$azD7pJ4Dur6LuWH6CuJcNxWy7tXPv1LPI/8rmgsyUyY=",
+    "last_login": null,
+    "is_superuser": true,
+    "username": "admin@handoverly.com",
+    "first_name": "Super",
+    "last_name": "Admin",
+    "email": "admin@handoverly.com",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2026-09-06T13:58:34.577Z",
+    "role": "SUPER_ADMIN",
+    "builder_company": null,
+    "phone": "",
+    "trade": "",
+    "groups": [],
+    "user_permissions": [],
+    "assigned_projects": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 8,
+  "fields": {
+    "password": "pbkdf2_sha256$1000000$aed2F6i57cG1w1rlUh4v5O$1C0mWJtnww2/6Ymwfscf5RKoNQqdXbGVJ5Rm/LVmmJY=",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "sudharsanelangovan2005@gmail.com",
+    "first_name": "Elangovan",
+    "last_name": "",
+    "email": "sudharsanelangovan2005@gmail.com",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-09-09T14:45:28.792Z",
+    "role": "BUILDER_OWNER",
+    "builder_company": "6dba2acc-3a80-4db7-aded-f8c886b920ff",
+    "phone": "",
+    "trade": "",
+    "groups": [],
+    "user_permissions": [],
+    "assigned_projects": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 9,
+  "fields": {
+    "password": "pbkdf2_sha256$1000000$gC80OJ9YW2a852I8oI2OVF$dDkBnchPWfuws53UC5mkLIyVw8Z7Ge8QS9qD+Af+VcA=",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "s1@gmail.com",
+    "first_name": "san",
+    "last_name": "",
+    "email": "s1@gmail.com",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-09-09T15:50:04.729Z",
+    "role": "PROJECT_ADMIN",
+    "builder_company": "6dba2acc-3a80-4db7-aded-f8c886b920ff",
+    "phone": "07550305675",
+    "trade": "",
+    "groups": [],
+    "user_permissions": [],
+    "assigned_projects": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 10,
+  "fields": {
+    "password": "pbkdf2_sha256$1000000$0JH9zE2Y7dUzzWopD91J1c$7jJrty0Bxup0CgelKgjY1gswnt15RS8fSIM9coWPzOg=",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "s2@gmail.com",
+    "first_name": "sana",
+    "last_name": "",
+    "email": "s2@gmail.com",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-09-09T15:50:59.599Z",
+    "role": "PROJECT_MANAGER",
+    "builder_company": "6dba2acc-3a80-4db7-aded-f8c886b920ff",
+    "phone": "07550305675",
+    "trade": "",
+    "groups": [],
+    "user_permissions": [],
+    "assigned_projects": [
+      2
+    ]
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 11,
+  "fields": {
+    "password": "pbkdf2_sha256$1000000$z9LrxgeAUfRNVlv3KmQMa9$CePMORj3TLuVD8Gu6JkImW0gQjlExioY5GJBeslfscM=",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "s3@gmail.com",
+    "first_name": "sa",
+    "last_name": "",
+    "email": "s3@gmail.com",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-09-09T16:10:52.390Z",
+    "role": "SITE_ENGINEER",
+    "builder_company": "6dba2acc-3a80-4db7-aded-f8c886b920ff",
+    "phone": "07550305675",
+    "trade": "",
+    "groups": [],
+    "user_permissions": [],
+    "assigned_projects": [
+      2
+    ]
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 12,
+  "fields": {
+    "password": "pbkdf2_sha256$1000000$HNxFhr8RcSHJJKSWOj6gxN$NjVdUcuqEsfMQLSmLMeM78FYWqb+G8FbPJcWhI5Ns2o=",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "s4@gmail.com",
+    "first_name": "s",
+    "last_name": "",
+    "email": "s4@gmail.com",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-09-09T16:11:30.927Z",
+    "role": "CRM",
+    "builder_company": "6dba2acc-3a80-4db7-aded-f8c886b920ff",
+    "phone": "07550305675",
+    "trade": "",
+    "groups": [],
+    "user_permissions": [],
+    "assigned_projects": [
+      2
+    ]
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 13,
+  "fields": {
+    "password": "pbkdf2_sha256$1000000$pgXDguYwHyIFbSqU5nOJVQ$kHmIjY96zF2+n82jmB9zYLv9vNocm8KNwEmiJNQQJjc=",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "s5@gmail.com",
+    "first_name": "ss",
+    "last_name": "",
+    "email": "s5@gmail.com",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-09-09T16:12:08.704Z",
+    "role": "ACCOUNTS",
+    "builder_company": "6dba2acc-3a80-4db7-aded-f8c886b920ff",
+    "phone": "07550305675",
+    "trade": "",
+    "groups": [],
+    "user_permissions": [],
+    "assigned_projects": [
+      2
+    ]
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 14,
+  "fields": {
+    "password": "pbkdf2_sha256$1000000$R98lMHASEXVu52s1s9vADD$alEkvY31085IL1okrsyUJNximqWu1ogWQs89suwoNI8=",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "s6@gmail.com",
+    "first_name": "sss",
+    "last_name": "",
+    "email": "s6@gmail.com",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-09-09T16:12:56.379Z",
+    "role": "CONTRACTOR",
+    "builder_company": "6dba2acc-3a80-4db7-aded-f8c886b920ff",
+    "phone": "07550305675",
+    "trade": "Electrician",
+    "groups": [],
+    "user_permissions": [],
+    "assigned_projects": [
+      2
+    ]
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 24,
+  "fields": {
+    "password": "pbkdf2_sha256$1000000$avde9PNHLUj1y7h9zSzUTW$vriTcR0phtoDw+Yk5jmvqgMvlZ5rnFIlgJbAKG6mB84=",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "su@gmail.com",
+    "first_name": "Sudharsan",
+    "last_name": "Elangovan",
+    "email": "su@gmail.com",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-09-09T16:26:58.321Z",
+    "role": "CUSTOMER",
+    "builder_company": "6dba2acc-3a80-4db7-aded-f8c886b920ff",
+    "phone": "+917550305675",
+    "trade": "",
+    "groups": [],
+    "user_permissions": [],
+    "assigned_projects": [
+      2
+    ]
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 25,
+  "fields": {
+    "password": "pbkdf2_sha256$1000000$nbiCcWanAoUXHKd57yMyQy$VpBAA4XDF54fOvHk8+iKizDYEF9/v+YoBnzO34jECt4=",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "sudharsanelanovan2005@gmail.com",
+    "first_name": "Sudharsan",
+    "last_name": "Elangovan",
+    "email": "sudharsanelanovan2005@gmail.com",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-09-09T16:29:49.020Z",
+    "role": "CUSTOMER",
+    "builder_company": "6dba2acc-3a80-4db7-aded-f8c886b920ff",
+    "phone": "+917550305675",
+    "trade": "",
+    "groups": [],
+    "user_permissions": [],
+    "assigned_projects": [
+      2
+    ]
+  }
+},
+{
+  "model": "builders.buildercompany",
+  "pk": "6dba2acc-3a80-4db7-aded-f8c886b920ff",
+  "fields": {
+    "company_name": "xz",
+    "registered_address": "18/1 abirami nagar first street vedapatty, Dindigul, vedapatty, Tamil Nadu, India, 624003",
+    "contact_name": "Elangovan",
+    "contact_number": "+917550305675",
+    "email": "sudharsanelangovan2005@gmail.com",
+    "logo": null,
+    "registration_number": "123zz",
+    "business_registration_details": "",
+    "status": "ACTIVE",
+    "subscription_plan": "7994ef1b-ffc5-4a0c-bc02-9cc74c19af62",
+    "owner": 8,
+    "joined_at": "2026-09-09T14:45:28.203Z",
+    "created_at": "2026-09-09T14:45:28.203Z",
+    "updated_at": "2026-09-09T14:45:29.472Z"
+  }
+},
+{
+  "model": "projects.project",
+  "pk": 2,
+  "fields": {
+    "name": "Sample 1",
+    "builder_company": "6dba2acc-3a80-4db7-aded-f8c886b920ff",
+    "project_type": "apartment",
+    "address": "TBD",
+    "start_date": null,
+    "expected_completion_date": null,
+    "rera_number": "SAM 134",
+    "builder_contact": "",
+    "project_manager": null,
+    "common_facilities": "",
+    "image": "",
+    "status": "active",
+    "created_by": 8,
+    "created_at": "2026-09-09T14:46:53.589Z",
+    "updated_at": "2026-09-09T14:46:53.589Z"
+  }
+},
+{
+  "model": "projects.block",
+  "pk": 2,
+  "fields": {
+    "project": 2,
+    "name": "BLOCK A",
+    "code": "B-A",
+    "description": "",
+    "total_floors": null,
+    "created_at": "2026-09-09T14:49:12.553Z"
+  }
+},
+{
+  "model": "projects.floor",
+  "pk": 3,
+  "fields": {
+    "block": 2,
+    "name": "GF",
+    "floor_number": 1,
+    "description": "",
+    "created_at": "2026-09-09T14:49:40.229Z"
+  }
+},
+{
+  "model": "projects.unit",
+  "pk": 2,
+  "fields": {
+    "floor": 3,
+    "unit_number": "101",
+    "unit_type": "apartment",
+    "area_sqft": "2000.00",
+    "bedrooms": 2,
+    "bathrooms": null,
+    "parking_details": "",
+    "customer": null,
+    "booking_date": null,
+    "agreement_date": null,
+    "expected_handover_date": null,
+    "completion_percentage": 0,
+    "status": "ready_for_handover",
+    "created_at": "2026-09-09T14:51:05.348Z",
+    "updated_at": "2026-09-10T06:43:33.013Z"
+  }
+},
+{
+  "model": "projects.unit",
+  "pk": 3,
+  "fields": {
+    "floor": 3,
+    "unit_number": "102",
+    "unit_type": "apartment",
+    "area_sqft": "2000.00",
+    "bedrooms": 1,
+    "bathrooms": 1,
+    "parking_details": "",
+    "customer": null,
+    "booking_date": null,
+    "agreement_date": null,
+    "expected_handover_date": null,
+    "completion_percentage": 0,
+    "status": "ready_for_handover",
+    "created_at": "2026-09-09T14:51:28.229Z",
+    "updated_at": "2026-09-10T16:40:57.014Z"
+  }
+},
+{
+  "model": "inspections.checklistcategory",
+  "pk": 1,
+  "fields": {
+    "name": "Entrance",
+    "order": 1
+  }
+},
+{
+  "model": "inspections.checklistcategory",
+  "pk": 2,
+  "fields": {
+    "name": "Living Room",
+    "order": 2
+  }
+},
+{
+  "model": "inspections.checklistcategory",
+  "pk": 3,
+  "fields": {
+    "name": "Bedroom",
+    "order": 3
+  }
+},
+{
+  "model": "inspections.checklistcategory",
+  "pk": 4,
+  "fields": {
+    "name": "Kitchen",
+    "order": 4
+  }
+},
+{
+  "model": "inspections.checklistcategory",
+  "pk": 5,
+  "fields": {
+    "name": "Bathroom",
+    "order": 5
+  }
+},
+{
+  "model": "inspections.checklistcategory",
+  "pk": 6,
+  "fields": {
+    "name": "Balcony",
+    "order": 6
+  }
+},
+{
+  "model": "inspections.checklistcategory",
+  "pk": 7,
+  "fields": {
+    "name": "Electrical",
+    "order": 7
+  }
+},
+{
+  "model": "inspections.checklistcategory",
+  "pk": 8,
+  "fields": {
+    "name": "Plumbing",
+    "order": 8
+  }
+},
+{
+  "model": "inspections.checklistcategory",
+  "pk": 9,
+  "fields": {
+    "name": "Safety",
+    "order": 9
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 1,
+  "fields": {
+    "category": 1,
+    "item_name": "Main door",
+    "order": 1
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 2,
+  "fields": {
+    "category": 1,
+    "item_name": "Door lock",
+    "order": 2
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 3,
+  "fields": {
+    "category": 1,
+    "item_name": "Door handle",
+    "order": 3
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 4,
+  "fields": {
+    "category": 1,
+    "item_name": "Doorbell",
+    "order": 4
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 5,
+  "fields": {
+    "category": 1,
+    "item_name": "Entrance flooring",
+    "order": 5
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 6,
+  "fields": {
+    "category": 1,
+    "item_name": "Entrance light",
+    "order": 6
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 7,
+  "fields": {
+    "category": 2,
+    "item_name": "Flooring",
+    "order": 1
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 8,
+  "fields": {
+    "category": 2,
+    "item_name": "Walls",
+    "order": 2
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 9,
+  "fields": {
+    "category": 2,
+    "item_name": "Ceiling",
+    "order": 3
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 10,
+  "fields": {
+    "category": 2,
+    "item_name": "Windows",
+    "order": 4
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 11,
+  "fields": {
+    "category": 2,
+    "item_name": "Doors",
+    "order": 5
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 12,
+  "fields": {
+    "category": 2,
+    "item_name": "Electrical points",
+    "order": 6
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 13,
+  "fields": {
+    "category": 2,
+    "item_name": "Switches",
+    "order": 7
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 14,
+  "fields": {
+    "category": 2,
+    "item_name": "Lights",
+    "order": 8
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 15,
+  "fields": {
+    "category": 2,
+    "item_name": "Fan",
+    "order": 9
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 16,
+  "fields": {
+    "category": 2,
+    "item_name": "AC provision",
+    "order": 10
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 17,
+  "fields": {
+    "category": 2,
+    "item_name": "TV point",
+    "order": 11
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 18,
+  "fields": {
+    "category": 2,
+    "item_name": "Curtain provision",
+    "order": 12
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 19,
+  "fields": {
+    "category": 3,
+    "item_name": "Flooring",
+    "order": 1
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 20,
+  "fields": {
+    "category": 3,
+    "item_name": "Walls",
+    "order": 2
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 21,
+  "fields": {
+    "category": 3,
+    "item_name": "Ceiling",
+    "order": 3
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 22,
+  "fields": {
+    "category": 3,
+    "item_name": "Door",
+    "order": 4
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 23,
+  "fields": {
+    "category": 3,
+    "item_name": "Door lock",
+    "order": 5
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 24,
+  "fields": {
+    "category": 3,
+    "item_name": "Windows",
+    "order": 6
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 25,
+  "fields": {
+    "category": 3,
+    "item_name": "Window lock",
+    "order": 7
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 26,
+  "fields": {
+    "category": 3,
+    "item_name": "Wardrobe",
+    "order": 8
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 27,
+  "fields": {
+    "category": 3,
+    "item_name": "Wardrobe shelves",
+    "order": 9
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 28,
+  "fields": {
+    "category": 3,
+    "item_name": "Electrical points",
+    "order": 10
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 29,
+  "fields": {
+    "category": 3,
+    "item_name": "Switches",
+    "order": 11
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 30,
+  "fields": {
+    "category": 3,
+    "item_name": "Lights",
+    "order": 12
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 31,
+  "fields": {
+    "category": 3,
+    "item_name": "Fan",
+    "order": 13
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 32,
+  "fields": {
+    "category": 3,
+    "item_name": "AC provision",
+    "order": 14
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 33,
+  "fields": {
+    "category": 3,
+    "item_name": "Curtain provision",
+    "order": 15
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 34,
+  "fields": {
+    "category": 4,
+    "item_name": "Flooring",
+    "order": 1
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 35,
+  "fields": {
+    "category": 4,
+    "item_name": "Walls",
+    "order": 2
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 36,
+  "fields": {
+    "category": 4,
+    "item_name": "Ceiling",
+    "order": 3
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 37,
+  "fields": {
+    "category": 4,
+    "item_name": "Kitchen platform",
+    "order": 4
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 38,
+  "fields": {
+    "category": 4,
+    "item_name": "Countertop finish",
+    "order": 5
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 39,
+  "fields": {
+    "category": 4,
+    "item_name": "Sink",
+    "order": 6
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 40,
+  "fields": {
+    "category": 4,
+    "item_name": "Sink tap",
+    "order": 7
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 41,
+  "fields": {
+    "category": 4,
+    "item_name": "Water supply",
+    "order": 8
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 42,
+  "fields": {
+    "category": 4,
+    "item_name": "Drainage",
+    "order": 9
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 43,
+  "fields": {
+    "category": 4,
+    "item_name": "Cabinets",
+    "order": 10
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 44,
+  "fields": {
+    "category": 4,
+    "item_name": "Cabinet shutters",
+    "order": 11
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 45,
+  "fields": {
+    "category": 4,
+    "item_name": "Cabinet handles",
+    "order": 12
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 46,
+  "fields": {
+    "category": 4,
+    "item_name": "Electrical points",
+    "order": 13
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 47,
+  "fields": {
+    "category": 4,
+    "item_name": "Switches",
+    "order": 14
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 48,
+  "fields": {
+    "category": 4,
+    "item_name": "Lights",
+    "order": 15
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 49,
+  "fields": {
+    "category": 4,
+    "item_name": "Chimney provision",
+    "order": 16
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 50,
+  "fields": {
+    "category": 4,
+    "item_name": "Hob provision",
+    "order": 17
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 51,
+  "fields": {
+    "category": 4,
+    "item_name": "Refrigerator point",
+    "order": 18
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 52,
+  "fields": {
+    "category": 4,
+    "item_name": "Exhaust fan provision",
+    "order": 19
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 53,
+  "fields": {
+    "category": 5,
+    "item_name": "Floor tiles",
+    "order": 1
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 54,
+  "fields": {
+    "category": 5,
+    "item_name": "Wall tiles",
+    "order": 2
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 55,
+  "fields": {
+    "category": 5,
+    "item_name": "Ceiling",
+    "order": 3
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 56,
+  "fields": {
+    "category": 5,
+    "item_name": "Bathroom door",
+    "order": 4
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 57,
+  "fields": {
+    "category": 5,
+    "item_name": "Door lock",
+    "order": 5
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 58,
+  "fields": {
+    "category": 5,
+    "item_name": "WC",
+    "order": 6
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 59,
+  "fields": {
+    "category": 5,
+    "item_name": "Wash basin",
+    "order": 7
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 60,
+  "fields": {
+    "category": 5,
+    "item_name": "Basin tap",
+    "order": 8
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 61,
+  "fields": {
+    "category": 5,
+    "item_name": "Shower",
+    "order": 9
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 62,
+  "fields": {
+    "category": 5,
+    "item_name": "Shower tap",
+    "order": 10
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 63,
+  "fields": {
+    "category": 5,
+    "item_name": "Health faucet",
+    "order": 11
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 64,
+  "fields": {
+    "category": 5,
+    "item_name": "Water supply",
+    "order": 12
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 65,
+  "fields": {
+    "category": 5,
+    "item_name": "Hot water provision",
+    "order": 13
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 66,
+  "fields": {
+    "category": 5,
+    "item_name": "Floor drain",
+    "order": 14
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 67,
+  "fields": {
+    "category": 5,
+    "item_name": "Drainage",
+    "order": 15
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 68,
+  "fields": {
+    "category": 5,
+    "item_name": "Mirror",
+    "order": 16
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 69,
+  "fields": {
+    "category": 5,
+    "item_name": "Exhaust fan",
+    "order": 17
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 70,
+  "fields": {
+    "category": 5,
+    "item_name": "Light",
+    "order": 18
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 71,
+  "fields": {
+    "category": 5,
+    "item_name": "Electrical point",
+    "order": 19
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 72,
+  "fields": {
+    "category": 5,
+    "item_name": "Waterproofing",
+    "order": 20
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 73,
+  "fields": {
+    "category": 6,
+    "item_name": "Flooring",
+    "order": 1
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 74,
+  "fields": {
+    "category": 6,
+    "item_name": "Wall finish",
+    "order": 2
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 75,
+  "fields": {
+    "category": 6,
+    "item_name": "Ceiling",
+    "order": 3
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 76,
+  "fields": {
+    "category": 6,
+    "item_name": "Railing",
+    "order": 4
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 77,
+  "fields": {
+    "category": 6,
+    "item_name": "Railing finish",
+    "order": 5
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 78,
+  "fields": {
+    "category": 6,
+    "item_name": "Balcony door",
+    "order": 6
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 79,
+  "fields": {
+    "category": 6,
+    "item_name": "Door lock",
+    "order": 7
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 80,
+  "fields": {
+    "category": 6,
+    "item_name": "Drainage",
+    "order": 8
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 81,
+  "fields": {
+    "category": 6,
+    "item_name": "Water outlet",
+    "order": 9
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 82,
+  "fields": {
+    "category": 6,
+    "item_name": "Light",
+    "order": 10
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 83,
+  "fields": {
+    "category": 6,
+    "item_name": "Electrical point",
+    "order": 11
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 84,
+  "fields": {
+    "category": 7,
+    "item_name": "Main electrical panel",
+    "order": 1
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 85,
+  "fields": {
+    "category": 7,
+    "item_name": "MCB",
+    "order": 2
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 86,
+  "fields": {
+    "category": 7,
+    "item_name": "RCCB",
+    "order": 3
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 87,
+  "fields": {
+    "category": 7,
+    "item_name": "DB labeling",
+    "order": 4
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 88,
+  "fields": {
+    "category": 7,
+    "item_name": "Switches",
+    "order": 5
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 89,
+  "fields": {
+    "category": 7,
+    "item_name": "Socket points",
+    "order": 6
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 90,
+  "fields": {
+    "category": 7,
+    "item_name": "Light points",
+    "order": 7
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 91,
+  "fields": {
+    "category": 7,
+    "item_name": "Fan points",
+    "order": 8
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 92,
+  "fields": {
+    "category": 7,
+    "item_name": "AC points",
+    "order": 9
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 93,
+  "fields": {
+    "category": 7,
+    "item_name": "Geyser points",
+    "order": 10
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 94,
+  "fields": {
+    "category": 7,
+    "item_name": "TV points",
+    "order": 11
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 95,
+  "fields": {
+    "category": 7,
+    "item_name": "Internet point",
+    "order": 12
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 96,
+  "fields": {
+    "category": 7,
+    "item_name": "Doorbell point",
+    "order": 13
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 97,
+  "fields": {
+    "category": 7,
+    "item_name": "Earthing",
+    "order": 14
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 98,
+  "fields": {
+    "category": 7,
+    "item_name": "Electrical safety",
+    "order": 15
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 99,
+  "fields": {
+    "category": 8,
+    "item_name": "Water supply",
+    "order": 1
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 100,
+  "fields": {
+    "category": 8,
+    "item_name": "Water pressure",
+    "order": 2
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 101,
+  "fields": {
+    "category": 8,
+    "item_name": "Hot water supply",
+    "order": 3
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 102,
+  "fields": {
+    "category": 8,
+    "item_name": "Cold water supply",
+    "order": 4
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 103,
+  "fields": {
+    "category": 8,
+    "item_name": "Drainage",
+    "order": 5
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 104,
+  "fields": {
+    "category": 8,
+    "item_name": "Floor drains",
+    "order": 6
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 105,
+  "fields": {
+    "category": 8,
+    "item_name": "Kitchen sink connection",
+    "order": 7
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 106,
+  "fields": {
+    "category": 8,
+    "item_name": "Bathroom connections",
+    "order": 8
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 107,
+  "fields": {
+    "category": 8,
+    "item_name": "Wash basin connection",
+    "order": 9
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 108,
+  "fields": {
+    "category": 8,
+    "item_name": "WC connection",
+    "order": 10
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 109,
+  "fields": {
+    "category": 8,
+    "item_name": "Health faucet connection",
+    "order": 11
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 110,
+  "fields": {
+    "category": 8,
+    "item_name": "Leakage check",
+    "order": 12
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 111,
+  "fields": {
+    "category": 8,
+    "item_name": "Pipe joints",
+    "order": 13
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 112,
+  "fields": {
+    "category": 8,
+    "item_name": "Water meter connection",
+    "order": 14
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 113,
+  "fields": {
+    "category": 8,
+    "item_name": "Main water valve",
+    "order": 15
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 114,
+  "fields": {
+    "category": 9,
+    "item_name": "Fire extinguisher provision",
+    "order": 1
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 115,
+  "fields": {
+    "category": 9,
+    "item_name": "Smoke detector provision",
+    "order": 2
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 117,
+  "fields": {
+    "category": 9,
+    "item_name": "Emergency exit",
+    "order": 3
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 118,
+  "fields": {
+    "category": 9,
+    "item_name": "Staircase safety",
+    "order": 4
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 119,
+  "fields": {
+    "category": 9,
+    "item_name": "Balcony railing safety",
+    "order": 5
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 120,
+  "fields": {
+    "category": 9,
+    "item_name": "Electrical safety",
+    "order": 6
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 121,
+  "fields": {
+    "category": 9,
+    "item_name": "Gas pipeline safety",
+    "order": 7
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 122,
+  "fields": {
+    "category": 9,
+    "item_name": "Fire alarm provision",
+    "order": 8
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 123,
+  "fields": {
+    "category": 9,
+    "item_name": "Emergency lighting",
+    "order": 9
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 124,
+  "fields": {
+    "category": 9,
+    "item_name": "Door safety",
+    "order": 10
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 125,
+  "fields": {
+    "category": 9,
+    "item_name": "Window safety",
+    "order": 11
+  }
+},
+{
+  "model": "inspections.checklistitem",
+  "pk": 126,
+  "fields": {
+    "category": 9,
+    "item_name": "Child safety provisions",
+    "order": 12
+  }
+},
+{
+  "model": "platform_admin.subscriptionplan",
+  "pk": "7994ef1b-ffc5-4a0c-bc02-9cc74c19af62",
+  "fields": {
+    "name": "Sample 2",
+    "description": "Test real database planTest real database plan",
+    "price": "10.00",
+    "billing_cycle": "Monthly",
+    "max_projects": 0,
+    "max_units": 0,
+    "max_users": 0,
+    "features": {
+      "storageLimit": ""
+    },
+    "status": "Active",
+    "created_at": "2026-09-06T15:04:23.715Z",
+    "updated_at": "2026-09-06T15:04:23.715Z"
+  }
+},
+{
+  "model": "platform_admin.subscriptionplan",
+  "pk": "c09a423c-8f87-4fa7-be5a-9d60e04378e5",
+  "fields": {
+    "name": "Sample 1",
+    "description": "Hello !",
+    "price": "20000.00",
+    "billing_cycle": "Monthly",
+    "max_projects": 20,
+    "max_units": 20,
+    "max_users": 20,
+    "features": {
+      "storageLimit": "20"
+    },
+    "status": "Active",
+    "created_at": "2026-09-06T14:25:26.546Z",
+    "updated_at": "2026-09-06T14:25:26.546Z"
+  }
+},
+{
+  "model": "platform_admin.checklist",
+  "pk": "b538a28f-8b46-400e-8644-0730bcb9ea08",
+  "fields": {
+    "name": "SAFE CHECK",
+    "description": "",
+    "category": "Electrical",
+    "status": "Active",
+    "created_by": 1,
+    "updated_by": null,
+    "created_at": "2026-09-06T15:14:37.374Z",
+    "updated_at": "2026-09-06T15:14:37.374Z"
+  }
+}
+]
