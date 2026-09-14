@@ -1,0 +1,10 @@
+Django>=5.0
+djangorestframework
+psycopg[binary]
+celery
+redis
+channels
+daphne
+django-cors-headers
+python-dotenv
+dj-database-url
