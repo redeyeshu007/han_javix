@@ -9,16 +9,19 @@ if not ALLOWED_HOSTS or ALLOWED_HOSTS == ['']:
     raise ValueError("ALLOWED_HOSTS must be set in production")
 
 # Database setup parsing from env variables
-POSTGRES_USER = os.environ.get('POSTGRES_USER')
-POSTGRES_PASSWORD = os.environ.get('POSTGRES_PASSWORD')
-POSTGRES_DB = os.environ.get('POSTGRES_DB')
-POSTGRES_HOST = os.environ.get('POSTGRES_HOST')
-POSTGRES_PORT = os.environ.get('POSTGRES_PORT', '5432')
+DATABASE_URL = os.environ.get('DATABASE_URL')
 
-if not all([POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB, POSTGRES_HOST]):
-    raise ValueError("Database credentials must be provided in production")
+if not DATABASE_URL:
+    POSTGRES_USER = os.environ.get('POSTGRES_USER')
+    POSTGRES_PASSWORD = os.environ.get('POSTGRES_PASSWORD')
+    POSTGRES_DB = os.environ.get('POSTGRES_DB')
+    POSTGRES_HOST = os.environ.get('POSTGRES_HOST')
+    POSTGRES_PORT = os.environ.get('POSTGRES_PORT', '5432')
 
-DATABASE_URL = f"postgres://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
+    if not all([POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB, POSTGRES_HOST]):
+        raise ValueError("Database credentials must be provided in production")
+    
+    DATABASE_URL = f"postgres://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
 
 DATABASES = {
     'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
